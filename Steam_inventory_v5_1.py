@@ -40,9 +40,52 @@ def check_expensive():
                     mydb.commit()
                     break
 
-def adv_main(table, bonus_statement,):
+def get_steam_ad(title_normal,selftext_normal):
+    if title_normal + selftext_normal > 1000:
+        print("zmien")
+
+def adv_main_reddit():
     global normal_guns, y, x, reddit_text
     melon = 0
+    mycursor.execute("SELECT market_hash_name_short, market_hash_name_shorter, inspect_link, item_float, screenshot, price, count(market_hash_name) as name_count from items WHERE tradeable = 1 GROUP BY market_hash_name having name_count = 1 UNION ALL SELECT market_hash_name_short, market_hash_name_shorter, inspect_link, item_float, screenshot, price, count(market_hash_name) as name_count from items_with_stickers WHERE tradeable = 1 AND has_expensive_stickers = 0 GROUP BY market_hash_name having name_count = 1 ORDER BY price")
+    myresult = mycursor.fetchall() 
+    print(myresult)
+    for xyz in myresult:
+        print(xyz[0]) #market_hash_name_short
+        print(xyz[1]) #market_hash_name_shorter
+        print(xyz[2]) #inspect_link
+        print(xyz[3]) #item_float
+        print(xyz[4]) #screenshot
+        print(xyz[5]) #price
+        print(xyz[6]) #name_count
+        
+        print("")
+
+        if xyz[5] > 3:
+            y += xyz[5]
+            x += 1
+            if(many == True):
+                reddit_text += str(xyz[5]) + "x | " + xyz[0] + " | " + str(xyz[3]) + " | [screenshot](" + xyz[4] + ") | [inspectlink](" + xyz[2] + ") \n"
+            if(many == False):
+                reddit_text += xyz[0] + " | " + str(xyz[3]) + " | [screenshot](" + xyz[4] + ") | [inspectlink](" + xyz[2] + ") \n"
+
+            if(melon == 0):
+                if(xyz[6] == 1):
+                    title_list.append(xyz[1])
+                if(xyz[6] != 1):
+                    title_list.append(xyz[6] + "x " + xyz[1])
+
+            if(melon != 0):
+                if(xyz[6] == 1):
+                    title_list.append(", " + xyz[1])
+                if(xyz[6] != 1):
+                    title_list.append(xyz[6] + "x " + xyz[1])
+                    
+            melon += 1
+            normal_guns += 1
+
+def adv_main_normal(table, bonus_statement, breakingpoint):
+    global normal_guns, normal_text
     mycursor.execute(f"SELECT *, count(market_hash_name) as name_count FROM {table} WHERE tradeable = 1 {bonus_statement} GROUP BY market_hash_name having name_count = 1 ORDER BY price ASC",)
     myresult = mycursor.fetchall() 
     for xyz in myresult:
@@ -55,35 +98,16 @@ def adv_main(table, bonus_statement,):
         print(xyz[6]) #exterior
         print(xyz[7]) #item_float
         print(xyz[8]) #screenshot
-        print(xyz[9])#tradeable
+        print(xyz[9]) #tradeable
         print(xyz[10])#tradeable_date
         print(xyz[11])#itemcount
         print("")
 
-        if xyz[4] > 3:
-            y += xyz[4]
-            x += 1
+        if xyz[4] > breakingpoint:
             if(many == True):
-                reddit_text += str(xyz[11]) + "x | " + xyz[2] + " | " + str(xyz[7]) + " | [screenshot](" + xyz[8] + ") | [inspectlink](" + xyz[5] + ") \n"
                 normal_text.append("[H] " + str(xyz[12]) + "x " +  xyz[3] + " \n")
             if(many == False):
-                reddit_text += xyz[2] + " | " + str(xyz[7]) + " | [screenshot](" + xyz[8] + ") | [inspectlink](" + xyz[5] + ") \n"
                 normal_text.append("[H] " + xyz[3] + " \n")
-
-            if(melon == 0):
-                if(xyz[11] == 1):
-                    title_list.append(xyz[3])
-                if(xyz[11] != 1):
-                    title_list.append(xyz[11] + "x " + xyz[3])
-
-            if(melon != 0):
-                if(xyz[11] == 1):
-                    title_list.append(", " + xyz[3])
-                if(xyz[11] != 1):
-                    title_list.append(xyz[11] + "x " + xyz[3])
-                    
-            melon += 1
-            normal_guns += 1
 
 def get_title_reddit(x, y, title_list, Want_reddit):
     global title_reddit
@@ -132,13 +156,14 @@ def advertisment_discussion_tab(title,selftext):
         print("Wystąpił błąd z publikacją posta w sekcji dyskusji")
 
 def advertisment_steam_groups(title,selftext,url):
+    global nick
     try:
         time.sleep(random.uniform(5.1, 8.0))
         driver.get(url)
         comments_other = driver.find_elements_by_tag_name("bdi")
         for element in comments_other:
             element = element.get_attribute('innerHTML')
-            if(element == "The Rice Dealer"):
+            if(element == nick):
                 return 
         comment_area = driver.find_element_by_class_name("commentthread_textarea")
         comment_area.click()
@@ -211,8 +236,6 @@ class CSGO_item():
                     mydb.commit() 
 
                 print("melon")
-                #for sticker in stickers:
-                    #val3.append(sticker)
             elif(response_screenshot.json()['result']["state"] == "IN_QUEUE"):
                 print("IN_QUEUE \n")
                 time.sleep(180)
@@ -270,6 +293,7 @@ else:
 
 print("\n \n")
 
+nick = "The Rice Dealer"
 go = 0
 j = 0
 i = 0
@@ -449,14 +473,6 @@ if(len(myresult) != len(set(myresult))):
     many = True
     print("many = True")
 
-if(many == True):
-    reddit_text = "Amount | Market Name | Float | Screenshot | Inspectlink | \n :--|:--:|:--:|:--:|--: \n"
-if(many == False):
-    reddit_text = "Market Name | Float | Screenshot | Inspectlink | \n :--|:--:|:--:|:--:|--: \n"
-        
-adv_main("items", "")
-adv_main("items_with_stickers", "AND has_expensive_stickers = 0")
-
 stickered_guns = 0
 expensive_stickers = mycursor.execute("SELECT name FROM stickers",)
 stickers_a = mycursor.fetchall() 
@@ -493,6 +509,16 @@ for xyz in myresult:
     sticker_names = ''.join(sticker_names) 
     sticker_normal_text += "[H] " + xyz[5] + " w/ " + sticker_names + "\n"
     stickered_guns += 1
+
+if(many == True):
+    reddit_text = "Amount | Market Name | Float | Screenshot | Inspectlink | \n :--|:--:|:--:|:--:|--: \n"
+if(many == False):
+    reddit_text = "Market Name | Float | Screenshot | Inspectlink | \n :--|:--:|:--:|:--:|--: \n"
+        
+adv_main_reddit()
+
+breakingpoint = 3 
+adv_main_normal("items", "", breakingpoint)
                     
 normal_text = ''.join(normal_text)
 sticker_normal_text = ''.join(sticker_normal_text)
@@ -519,12 +545,13 @@ if(normal_guns > 0 and y > 20):
     selftext_reddit = buyout + reddit_text + ending + "\n \nThe prices are negotiable"#nie zmieniaj
     title_reddit = ""
     get_title_reddit(x, y, title_list, Want_reddit)
-    #advertisment_reddit(title_reddit,selftext_reddit)
+    advertisment_reddit(title_reddit,selftext_reddit)
     time.sleep(5)
 
 if(stickered_guns > 0):
     chrome_options = Options()
     chrome_options.add_argument("--disable-extensions")
+    chrome_options.add_argument("--incognito")
     chrome_options.add_experimental_option("excludeSwitches", ['enable-automation'])
     chrome_options.add_argument("--start-maximized")
     chrome_options.add_argument(r"user-data-dir=C:\Users\Michal\AppData\Local\Google\Chrome\User Data\Profile 1")
