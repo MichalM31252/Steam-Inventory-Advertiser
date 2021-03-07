@@ -39,6 +39,18 @@ def check_expensive():
                     mydb.commit()
                     break
 
+def check_many():
+    many = False
+    mycursor.execute("SELECT `market_hash_name` FROM items WHERE price > 1 AND tradeable = 1 ORDER BY price ASC",)
+    myresult = mycursor.fetchall() 
+    print(myresult)
+    print(set(myresult))
+    if(len(myresult) != len(set(myresult))):
+        many = True
+        print("many = True")
+
+    return many
+
 def update_and_find():
     global normal_guns
     mycursor.execute("SELECT `item_id`,`tradeable`,`tradeable_date`, `price` FROM items",)
@@ -78,15 +90,6 @@ def update_and_find():
             normal_guns = True
 
 def get_title_reddit(Want_reddit, limit, limit_title):
-
-    many = False
-    mycursor.execute("SELECT `market_hash_name` FROM items WHERE price > 1 AND tradeable = 1 ORDER BY price ASC",)
-    myresult = mycursor.fetchall() 
-    print(myresult)
-    print(set(myresult))
-    if(len(myresult) != len(set(myresult))):
-        many = True
-        print("many = True")
 
     title_reddit = ""
     title_string = ""
@@ -136,7 +139,7 @@ def get_title_reddit(Want_reddit, limit, limit_title):
             
         title_reddit = "[H] " + Have + "(" + title_string + ")" + " [W] " + Want_reddit
 
-        return title_reddit, x, y, many
+        return title_reddit, x, y
     else:
         print("Niestety nie ma żadnych przedmiotów które można zareklamować na reddicie")
 
@@ -595,7 +598,8 @@ else:
 if(normal_guns == True):
     buyout = "\n \n B/O " + bo + "\n \n" #dodać program
     selftext_reddit = ""
-    title_reddit, x, y, many = get_title_reddit(Want_reddit, 3, 300)
+    many = check_many()
+    title_reddit, x, y = get_title_reddit(Want_reddit, 3, 300)
     reddit_text = adv_main_reddit(3, 30000, many)
     selftext_reddit = buyout + reddit_text + ending + "\n \nThe prices are negotiable"#nie zmieniaj
     advertisment_reddit(title_reddit,selftext_reddit)
