@@ -34,97 +34,177 @@ def check_expensive():
     for element in myresult:
         for sticker in stickers_exp:
             for i in range(1,6):
-                print("Element: 1",element[i])
                 if element[i] in sticker:
                     mycursor.execute("UPDATE items_with_stickers SET `has_expensive_stickers` = 1 WHERE `item_id` = %s", (element[6],))
                     mydb.commit()
                     break
 
-def get_steam_ad(title_normal,selftext_normal):
-    if title_normal + selftext_normal > 1000:
-        print("zmien")
+def update_and_find():
+    global normal_guns
+    mycursor.execute("SELECT `item_id`,`tradeable`,`tradeable_date`, `price` FROM items",)
+    myresult = mycursor.fetchall()
+    print(myresult,"BFTTTUUUUH")
+    teraz = datetime.datetime.now().replace(microsecond=0)
+    value = None
+    pom = 0
+    for element in myresult:
+        if(element[2] != None):
+            if(element[2] <= teraz):
+                mycursor.execute("UPDATE items SET `tradeable` = 1, `tradeable_date` = %s WHERE `item_id` = %s", (value,element[0],))
+                mydb.commit()
+        if element[1] == 1 and element[3] >= 3:
+            pom += 1
+        elif element[3] >= 45:
+            normal_guns = True
+        if pom >= 2:
+            normal_guns = True
 
-def adv_main_reddit():
-    global normal_guns, y, x, reddit_text
-    melon = 0
-    mycursor.execute("SELECT market_hash_name_short, market_hash_name_shorter, inspect_link, item_float, screenshot, price, count(market_hash_name) as name_count from items WHERE tradeable = 1 GROUP BY market_hash_name having name_count = 1 UNION ALL SELECT market_hash_name_short, market_hash_name_shorter, inspect_link, item_float, screenshot, price, count(market_hash_name) as name_count from items_with_stickers WHERE tradeable = 1 AND has_expensive_stickers = 0 GROUP BY market_hash_name having name_count = 1 ORDER BY price")
+    mycursor.execute("SELECT `item_id`,`tradeable`,`tradeable_date`, `price` FROM items_with_stickers",)
+    myresult = mycursor.fetchall()
+    print(myresult,"BFTTTUUUUH")
+    teraz = datetime.datetime.now().replace(microsecond=0)
+    value = None
+    print(myresult)
+    for element in myresult:
+        if(element[2] != None):
+            if(element[2] <= teraz):
+                mycursor.execute("UPDATE items_with_stickers SET `tradeable` = 1, `tradeable_date` = %s WHERE `item_id` = %s", (value,element[0],))
+                mydb.commit()
+        if element[1] == 1 and element[3] > 3:
+            pom += 1
+        elif element[3] > 45:
+            normal_guns = True
+        if pom >= 2:
+            normal_guns = True
+
+def get_title_reddit(Want_reddit, limit, limit_title):
+
+    many = False
+    mycursor.execute("SELECT `market_hash_name` FROM items WHERE price > 1 AND tradeable = 1 ORDER BY price ASC",)
     myresult = mycursor.fetchall() 
     print(myresult)
-    for xyz in myresult:
-        print(xyz[0]) #market_hash_name_short
-        print(xyz[1]) #market_hash_name_shorter
-        print(xyz[2]) #inspect_link
-        print(xyz[3]) #item_float
-        print(xyz[4]) #screenshot
-        print(xyz[5]) #price
-        print(xyz[6]) #name_count
-        
-        print("")
+    print(set(myresult))
+    if(len(myresult) != len(set(myresult))):
+        many = True
+        print("many = True")
 
-        if xyz[5] > 3:
-            y += xyz[5]
-            x += 1
-            if(many == True):
-                reddit_text += str(xyz[5]) + "x | " + xyz[0] + " | " + str(xyz[3]) + " | [screenshot](" + xyz[4] + ") | [inspectlink](" + xyz[2] + ") \n"
-            if(many == False):
-                reddit_text += xyz[0] + " | " + str(xyz[3]) + " | [screenshot](" + xyz[4] + ") | [inspectlink](" + xyz[2] + ") \n"
-
-            if(melon == 0):
-                if(xyz[6] == 1):
-                    title_list.append(xyz[1])
-                if(xyz[6] != 1):
-                    title_list.append(xyz[6] + "x " + xyz[1])
-
-            if(melon != 0):
-                if(xyz[6] == 1):
-                    title_list.append(", " + xyz[1])
-                if(xyz[6] != 1):
-                    title_list.append(xyz[6] + "x " + xyz[1])
-                    
-            melon += 1
-            normal_guns += 1
-
-def adv_main_normal(table, bonus_statement, breakingpoint):
-    global normal_guns, normal_text
-    mycursor.execute(f"SELECT *, count(market_hash_name) as name_count FROM {table} WHERE tradeable = 1 {bonus_statement} GROUP BY market_hash_name having name_count = 1 ORDER BY price ASC",)
+    title_reddit = ""
+    title_string = ""
+    x = 0
+    y = 0
+    pom = True
+    mycursor.execute("SELECT market_hash_name_shorter, count(market_hash_name) as name_count, price from items WHERE tradeable = 1 GROUP BY market_hash_name having name_count = 1 UNION ALL SELECT market_hash_name_shorter, count(market_hash_name) as name_count, price from items_with_stickers WHERE tradeable = 1 AND has_expensive_stickers = 0 GROUP BY market_hash_name having name_count = 1 ORDER BY price DESC")
     myresult = mycursor.fetchall() 
-    for xyz in myresult:
-        print(xyz[0]) #item_id
-        print(xyz[1]) #market_hash_name
-        print(xyz[2]) #market_hash_name_short
-        print(xyz[3]) #market_hash_name_shorter
-        print(xyz[4]) #price 
-        print(xyz[5]) #inspect_link 
-        print(xyz[6]) #exterior
-        print(xyz[7]) #item_float
-        print(xyz[8]) #screenshot
-        print(xyz[9]) #tradeable
-        print(xyz[10])#tradeable_date
-        print(xyz[11])#itemcount
-        print("")
+    if myresult:
+        print(myresult)
+        for xyz in myresult:
+            print(xyz[0]) #market_hash_name_shorter
+            print(xyz[1]) #name_count
+            print(xyz[2]) #price
+            print("")
 
-        if xyz[4] > breakingpoint:
-            if(many == True):
-                normal_text.append("[H] " + str(xyz[12]) + "x " +  xyz[3] + " \n")
-            if(many == False):
-                normal_text.append("[H] " + xyz[3] + " \n")
+            if xyz[2] >= limit:
 
-def get_title_reddit(x, y, title_list, Want_reddit):
-    global title_reddit
-    Have = str(x) + " items worth around: " + str(y) + "$"
-    baza = "[H] " + Have + "(" + ")" + " [W] " + Want_reddit
-    title_string = ''.join(title_list)
-    title_reddit = "[H] " + Have + "(" + title_string, ")" + " [W] " + Want_reddit #nie zmieniaj
-    title_reddit = ''.join(title_reddit)
-    if(len(title_reddit) > 300): 
-        pom_list = []
-        for element in title_list:
-            if(len(baza) + len(element) + 2 > 300):
-                pom_string = "".join(pom_list)
-                title_reddit = "[H] " + Have + "(" + pom_string + ")" + " [W] " + Want_reddit #nie zmieniaj
-                title_reddit = ''.join(title_reddit)
+                y += xyz[2]
+                x += 1
+                pom_text = ""
+
+                if pom == False:
+                    if xyz[1] == 1:
+                        pom_text = ", " + str(xyz[0])
+                    else:
+                        pom_text = ", " + str(xyz[1]) + "x " + str(xyz[0])
+                if pom == True:
+                    pom = False
+                    if xyz[1] == 1:
+                        pom_text = str(xyz[0])
+                    else:
+                        pom_text = str(xyz[1]) + "x " + str(xyz[0])
+                
+                Have = str(x) + " items worth around: " + str(y) + "$ "
+                pomoc = ["[H] ", Have, "(", title_string, ")", " [W] ", Want_reddit, pom_text]
+                a = sum(len(i) for i in pomoc)
+                if(a <= limit_title): 
+                    title_string += pom_text
+                else:
+                    break
+
+        if many:
+            Have = str(x) + " items worth around: " + str(y) + "$ "
+        elif many == False:
+            Have = str(x) + " item worth around: " + str(y) + "$ "
+            
+        title_reddit = "[H] " + Have + "(" + title_string + ")" + " [W] " + Want_reddit
+
+        return title_reddit, x, y, many
+    else:
+        print("Niestety nie ma żadnych przedmiotów które można zareklamować na reddicie")
+
+def adv_main_reddit(limit, subreddit_limit, many):
+
+    if(many == True):
+        reddit_text = "Amount | Market Name | Float | Screenshot | Inspectlink | \n :--|:--:|:--:|:--:|--: \n"
+    if(many == False):
+        reddit_text = "Market Name | Float | Screenshot | Inspectlink | \n :--|:--:|:--:|:--:|--: \n"
+    
+    global normal_guns
+    mycursor.execute("SELECT market_hash_name_short, market_hash_name_shorter, inspect_link, item_float, screenshot, price, count(market_hash_name) as name_count from items WHERE tradeable = 1 GROUP BY market_hash_name having name_count = 1 UNION ALL SELECT market_hash_name_short, market_hash_name_shorter, inspect_link, item_float, screenshot, price, count(market_hash_name) as name_count from items_with_stickers WHERE tradeable = 1 AND has_expensive_stickers = 0 GROUP BY market_hash_name having name_count = 1 ORDER BY price ASC")
+    myresult = mycursor.fetchall() 
+    if myresult:
+        print("asdasdafsvervtjynj: ",myresult)
+        for xyz in myresult:
+            print(xyz[0]) #market_hash_name_short
+            print(xyz[1]) #market_hash_name_shorter
+            print(xyz[2]) #inspect_link
+            print(xyz[3]) #item_float
+            print(xyz[4]) #screenshot
+            print(xyz[5]) #price
+            print(xyz[6]) #name_count
+            print("")
+
+            add_to_selftext = ""
+            pomoc = [reddit_text, buyout, ending, str(xyz[5]), "x | ", xyz[0], " | ", str(xyz[3]), " | [screenshot](", xyz[4], ") | [inspectlink](", xyz[2], ") \n"]
+            a = sum(len(i) for i in pomoc)
+            if a <= subreddit_limit:
+                if xyz[5] >= limit:
+                    if(xyz[6] != 1):
+                        add_to_selftext += str(xyz[5]) + "x | " + xyz[0] + " | " + str(xyz[3]) + " | [screenshot](" + xyz[4] + ") | [inspectlink](" + xyz[2] + ") \n"
+                    if(xyz[6] == 1):
+                        add_to_selftext += xyz[0] + " | " + str(xyz[3]) + " | [screenshot](" + xyz[4] + ") | [inspectlink](" + xyz[2] + ") \n"
+                    normal_guns = True
+            if a > subreddit_limit:
+                limit += 0.1
+                adv_main_reddit(limit,subreddit_limit)
+
+            reddit_text += add_to_selftext
+
+    return reddit_text
+
+def adv_main_steam(limit,steam_group_limit,title_normal,selftext_normal):
+    mycursor.execute("SELECT market_hash_name_shorter, count(market_hash_name) as name_count, price from items WHERE tradeable = 1 GROUP BY market_hash_name having name_count = 1 UNION ALL SELECT market_hash_name_shorter, count(market_hash_name) as name_count, price from items_with_stickers WHERE tradeable = 1 AND has_expensive_stickers = 0 GROUP BY market_hash_name having name_count = 1 ORDER BY price DESC")
+    myresult = mycursor.fetchall() 
+    if myresult:
+        print(myresult)
+        for xyz in myresult:
+            print(xyz[0]) #market_hash_name_shorter
+            print(xyz[1]) #name_count
+            print("")
+
+            add_to_normal = ""
+            pomoc = [title_normal, selftext_normal, add_to_normal]
+            a = sum(len(i) for i in pomoc)
+            if a <= steam_group_limit:
+                if xyz[1] == 1:
+                    add_to_normal = "[H] " + xyz[0] + "\n"
+                else:
+                    add_to_normal = "[H] " + xyz[1] + "x " + xyz[0] + "\n"
             else:
-                pom_list.append(element)
+                limit += 0.1
+                adv_main_steam(limit,steam_group_limit,title_normal,selftext_normal)
+
+            selftext_normal += add_to_normal
+    else:
+        print("Niestety nie ma żadnych przedmiotów które można zareklamować na reddicie")
 
 def advertisment_reddit(title_reddit,selftext_reddit):
     reddit = praw.Reddit(client_id='lIA2AeFihJSYfw',
@@ -277,6 +357,14 @@ except TypeError:
     print("Występują problemy z api steama. Spróbuj ponownie poźniej")
     raise SystemExit(0)
 
+if paczka_json["success"] == False:
+    print("Występują problemy z api steama. Spróbuj ponownie poźniej")
+    raise SystemExit(0)
+
+if not paczka_json["rgInventory"]:
+    print("Nie masz żadnych przedmiotów w ekwipunku")
+    raise SystemExit(0)
+
 paczka_inv_dict = paczka_json["rgInventory"]
 
 paczka_des_dict = paczka_json["rgDescriptions"]
@@ -299,8 +387,10 @@ j = 0
 i = 0
 x = 0
 y = 0
-many = False
-normal_guns = 0
+
+normal_guns = False
+subreddit_limit = 30000
+steam_group_limit = 1000
 
 for element1 in paczka_inv_dict:
     sticker_list = []
@@ -443,35 +533,7 @@ for element in myresult:
 
 check_expensive()
 
-mycursor.execute("SELECT `item_id`,`tradeable`,`tradeable_date` FROM items",)
-myresult = mycursor.fetchall()
-teraz = datetime.datetime.now().replace(microsecond=0)
-value = None
-print(myresult)
-for element in myresult:
-    if(element[2] != None):
-        if(element[2] <= teraz):
-            mycursor.execute("UPDATE items SET `tradeable` = 1, `tradeable_date` = %s WHERE `item_id` = %s", (value,element[0],))
-            mydb.commit()
-
-mycursor.execute("SELECT `item_id`,`tradeable`,`tradeable_date` FROM items_with_stickers",)
-myresult = mycursor.fetchall()
-teraz = datetime.datetime.now().replace(microsecond=0)
-value = None
-print(myresult)
-for element in myresult:
-    if(element[2] != None):
-        if(element[2] <= teraz):
-            mycursor.execute("UPDATE items_with_stickers SET `tradeable` = 1, `tradeable_date` = %s WHERE `item_id` = %s", (value,element[0],))
-            mydb.commit()
-
-mycursor.execute("SELECT `market_hash_name` FROM items WHERE price > 1 AND tradeable = 1 ORDER BY price ASC",)
-myresult = mycursor.fetchall() 
-print(myresult)
-print(set(myresult))
-if(len(myresult) != len(set(myresult))):
-    many = True
-    print("many = True")
+update_and_find()
 
 stickered_guns = 0
 expensive_stickers = mycursor.execute("SELECT name FROM stickers",)
@@ -509,21 +571,11 @@ for xyz in myresult:
     sticker_names = ''.join(sticker_names) 
     sticker_normal_text += "[H] " + xyz[5] + " w/ " + sticker_names + "\n"
     stickered_guns += 1
-
-if(many == True):
-    reddit_text = "Amount | Market Name | Float | Screenshot | Inspectlink | \n :--|:--:|:--:|:--:|--: \n"
-if(many == False):
-    reddit_text = "Market Name | Float | Screenshot | Inspectlink | \n :--|:--:|:--:|:--:|--: \n"
-        
-adv_main_reddit()
-
-breakingpoint = 3 
-adv_main_normal("items", "", breakingpoint)
                     
 normal_text = ''.join(normal_text)
 sticker_normal_text = ''.join(sticker_normal_text)
     
-if(normal_guns == 0 and stickered_guns == 0):
+if(normal_guns == True and stickered_guns == 0):
     print("Niestety nie ma przedmiotów dostępnych na wymianę")
     raise SystemExit(0)
 
@@ -540,22 +592,24 @@ elif(sticker_normal_text == ""):
 else:
     selftext_normal = normal_text + "\n" + sticker_normal_text + ending
 
-if(normal_guns > 0 and y > 20):
+if(normal_guns == True):
     buyout = "\n \n B/O " + bo + "\n \n" #dodać program
+    selftext_reddit = ""
+    title_reddit, x, y, many = get_title_reddit(Want_reddit, 3, 300)
+    reddit_text = adv_main_reddit(3, 30000, many)
     selftext_reddit = buyout + reddit_text + ending + "\n \nThe prices are negotiable"#nie zmieniaj
-    title_reddit = ""
-    get_title_reddit(x, y, title_list, Want_reddit)
     advertisment_reddit(title_reddit,selftext_reddit)
     time.sleep(5)
 
-if(stickered_guns > 0):
-    chrome_options = Options()
-    chrome_options.add_argument("--disable-extensions")
-    chrome_options.add_argument("--incognito")
-    chrome_options.add_experimental_option("excludeSwitches", ['enable-automation'])
-    chrome_options.add_argument("--start-maximized")
-    chrome_options.add_argument(r"user-data-dir=C:\Users\Michal\AppData\Local\Google\Chrome\User Data\Profile 1")
-    driver = webdriver.Chrome(executable_path=r'C:\Users\Michal\Desktop\projekty\chromedriver.exe', chrome_options = chrome_options)
+if(stickered_guns > 0 or normal_guns == True):
+    options = Options()
+    options.add_argument("--disable-extensions")
+    options.add_experimental_option("excludeSwitches", ['enable-automation'])
+    options.add_argument("--start-maximized")
+    options.add_argument(r"user-data-dir=C:\Users\Michal\AppData\Local\Google\Chrome\User Data\Profile 1")
+    driver = webdriver.Chrome(executable_path=r'C:\Users\Michal\Desktop\projekty\chromedriver.exe', options = options)
+
+    adv_main_steam(3,1000,title_normal,selftext_normal)
 
     advertisment_discussion_tab(title_normal,selftext_normal)
     time.sleep(5)
