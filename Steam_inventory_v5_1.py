@@ -48,32 +48,48 @@ def check_many():
     if(len(myresult) != len(set(myresult))):
         many = True
         print("many = True")
-
     return many
+
+def delete_gone():
+    mycursor.execute("SELECT `item_id` FROM items",)
+    myresult = mycursor.fetchall() 
+    for element in myresult:
+        if element not in id_list:
+            mycursor.execute("DELETE FROM items WHERE item_id = %s", element)
+            mydb.commit()
+
+    mycursor.execute("SELECT `item_id` FROM items_with_stickers",)
+    myresult = mycursor.fetchall() 
+    for element in myresult:
+        if element not in id_list:
+            mycursor.execute("DELETE FROM items_with_stickers WHERE item_id = %s", element)
+            mydb.commit()
 
 def update_and_find():
     global normal_guns
+    stickered_guns = False
     mycursor.execute("SELECT `item_id`,`tradeable`,`tradeable_date`, `price` FROM items",)
     myresult = mycursor.fetchall()
-    print(myresult,"BFTTTUUUUH")
+    print(myresult)
     teraz = datetime.datetime.now().replace(microsecond=0)
     value = None
-    pom = 0
+    pom1 = 0
+    pom2 = 0
     for element in myresult:
         if(element[2] != None):
             if(element[2] <= teraz):
                 mycursor.execute("UPDATE items SET `tradeable` = 1, `tradeable_date` = %s WHERE `item_id` = %s", (value,element[0],))
                 mydb.commit()
         if element[1] == 1 and element[3] >= 3:
-            pom += 1
+            pom1 += 1
         elif element[3] >= 45:
             normal_guns = True
-        if pom >= 2:
+        if pom1 >= 2:
             normal_guns = True
 
-    mycursor.execute("SELECT `item_id`,`tradeable`,`tradeable_date`, `price` FROM items_with_stickers",)
+    mycursor.execute("SELECT `item_id`,`tradeable`,`tradeable_date`, `price`, `has_expensive_stickers` FROM items_with_stickers",)
     myresult = mycursor.fetchall()
-    print(myresult,"BFTTTUUUUH")
+    print(myresult)
     teraz = datetime.datetime.now().replace(microsecond=0)
     value = None
     print(myresult)
@@ -82,15 +98,21 @@ def update_and_find():
             if(element[2] <= teraz):
                 mycursor.execute("UPDATE items_with_stickers SET `tradeable` = 1, `tradeable_date` = %s WHERE `item_id` = %s", (value,element[0],))
                 mydb.commit()
-        if element[1] == 1 and element[3] > 3:
-            pom += 1
-        elif element[3] > 45:
-            normal_guns = True
-        if pom >= 2:
-            normal_guns = True
+        elif element[1] == 1 and element[3] > 3:
+            if element[4] == 1:
+                pom2 += 1 
+                if pom2 >= 2:
+                    stickered_guns = True
+            if element[1] == 1 and element[3] > 45:
+                normal_guns = True
+            else:
+                pom1 += 1  
+                if pom1 >= 2:
+                    normal_guns = True
+
+    return normal_guns, stickered_guns
 
 def get_title_reddit(Want_reddit, limit, limit_title):
-
     title_reddit = ""
     title_string = ""
     x = 0
@@ -183,7 +205,9 @@ def adv_main_reddit(limit, subreddit_limit, many):
 
     return reddit_text
 
-def adv_main_steam(limit,steam_group_limit,title_normal,selftext_normal):
+def adv_main_steam(limit,steam_group_limit,title_normal):
+    selftext_normal = ""
+    normal_text = ""
     mycursor.execute("SELECT market_hash_name_shorter, count(market_hash_name) as name_count, price from items WHERE tradeable = 1 GROUP BY market_hash_name having name_count = 1 UNION ALL SELECT market_hash_name_shorter, count(market_hash_name) as name_count, price from items_with_stickers WHERE tradeable = 1 AND has_expensive_stickers = 0 GROUP BY market_hash_name having name_count = 1 ORDER BY price DESC")
     myresult = mycursor.fetchall() 
     if myresult:
@@ -191,23 +215,67 @@ def adv_main_steam(limit,steam_group_limit,title_normal,selftext_normal):
         for xyz in myresult:
             print(xyz[0]) #market_hash_name_shorter
             print(xyz[1]) #name_count
+            print(xyz[2]) #price
             print("")
 
-            add_to_normal = ""
-            pomoc = [title_normal, selftext_normal, add_to_normal]
-            a = sum(len(i) for i in pomoc)
-            if a <= steam_group_limit:
-                if xyz[1] == 1:
-                    add_to_normal = "[H] " + xyz[0] + "\n"
+            if xyz[2] >= limit:
+                add_to_normal = ""
+                pomoc = [title_normal, normal_text, add_to_normal]
+                a = sum(len(i) for i in pomoc)
+                if a <= steam_group_limit:
+                    if xyz[1] == 1:
+                        add_to_normal = "[H] " + xyz[0] + "\n"
+                    else:
+                        add_to_normal = "[H] " + xyz[1] + "x " + xyz[0] + "\n"
                 else:
-                    add_to_normal = "[H] " + xyz[1] + "x " + xyz[0] + "\n"
-            else:
-                limit += 0.1
-                adv_main_steam(limit,steam_group_limit,title_normal,selftext_normal)
+                    limit += 0.1
+                    adv_main_steam(limit,steam_group_limit,title_normal,normal_text)
 
-            selftext_normal += add_to_normal
+                normal_text += add_to_normal
+
+    sticker_normal_text = ""
+    mycursor.execute("SELECT name FROM stickers",)
+    stickers_a = mycursor.fetchall() 
+    mycursor.execute("SELECT stickers_applied.sticker_1, stickers_applied.sticker_2, stickers_applied.sticker_3, stickers_applied.sticker_4, stickers_applied.sticker_5, items_with_stickers.market_hash_name_shorter FROM stickers_applied JOIN items_with_stickers ON (stickers_applied.item_id = items_with_stickers.item_id AND items_with_stickers.has_expensive_stickers = 1 AND items_with_stickers.tradeable = 1) ORDER BY items_with_stickers.price ASC",)
+    myresult = mycursor.fetchall() 
+    print(myresult)
+    for xyz in myresult:
+        print(xyz[0]) #sticker_1
+        print(xyz[1]) #sticker_2
+        print(xyz[2]) #sticker_3
+        print(xyz[3]) #sticker_4
+        print(xyz[4]) #sticker_5
+        print(xyz[5]) #market_hash_name_shorter
+        print("")
+
+        sticker_names = []
+        first = True
+        for n in range(0,5):
+            pom = str(xyz[n])
+            if pom != "":
+                for element in stickers_a:
+                    if pom in element:
+                        pom = pom.replace("Katowice","Kato")
+                        pom = pom.replace("20","")
+                        pom = pom.replace(" | "," ")
+                        if first == True:   
+                            sticker_names.append(pom)
+                            first = False
+                        elif first == False:
+                            sticker_names.append(", " + pom)
+            else:
+                continue
+        sticker_names = ''.join(sticker_names) 
+        sticker_normal_text += "[H] " + xyz[5] + " w/ " + sticker_names + "\n"
+
+    if(normal_text == ""):
+        selftext_normal = sticker_normal_text + ending
+    elif(sticker_normal_text == ""):
+        selftext_normal = normal_text + ending
     else:
-        print("Niestety nie ma żadnych przedmiotów które można zareklamować na reddicie")
+        selftext_normal = normal_text + "\n" + sticker_normal_text + ending
+
+        return selftext_normal
 
 def advertisment_reddit(title_reddit,selftext_reddit):
     reddit = praw.Reddit(client_id='lIA2AeFihJSYfw',
@@ -332,8 +400,6 @@ class CSGO_item():
             time.sleep(3)
 val = []
 black_list = []
-normal_text = []
-sticker_normal_text = []
 title_list = []
 reddit_text = ""
 objekty = {}
@@ -520,80 +586,17 @@ for name, lista_obj in objekty.items():
     for objekt in lista_obj:
         objekt.screenshot_post(objekt.inspect_link)
 
-mycursor.execute("SELECT `item_id` FROM items",)
-myresult = mycursor.fetchall() 
-for element in myresult:
-    if element not in id_list:
-        mycursor.execute("DELETE FROM items WHERE item_id = %s", element)
-        mydb.commit()
-
-mycursor.execute("SELECT `item_id` FROM items_with_stickers",)
-myresult = mycursor.fetchall() 
-for element in myresult:
-    if element not in id_list:
-        mycursor.execute("DELETE FROM items_with_stickers WHERE item_id = %s", element)
-        mydb.commit()
+delete_gone()
 
 check_expensive()
 
-update_and_find()
-
-stickered_guns = 0
-expensive_stickers = mycursor.execute("SELECT name FROM stickers",)
-stickers_a = mycursor.fetchall() 
-mycursor.execute("SELECT stickers_applied.sticker_1, stickers_applied.sticker_2, stickers_applied.sticker_3, stickers_applied.sticker_4, stickers_applied.sticker_5, items_with_stickers.market_hash_name_shorter FROM stickers_applied JOIN items_with_stickers ON (stickers_applied.item_id = items_with_stickers.item_id AND items_with_stickers.has_expensive_stickers = 1 AND items_with_stickers.tradeable = 1) ORDER BY items_with_stickers.price ASC",)
-myresult = mycursor.fetchall() 
-print("Myresultaaaaaa: ",myresult)
-for xyz in myresult:
-    print(xyz[0]) #sticker_1
-    print(xyz[1]) #sticker_2
-    print(xyz[2]) #sticker_3
-    print(xyz[3]) #sticker_4
-    print(xyz[4]) #sticker_5
-    print(xyz[5]) #market_hash_name_shorter
-    print("")
-
-    sticker_names = []
-    first = True
-    for n in range(0,5):
-        pom = str(xyz[n])
-        if pom != "":
-            for element in stickers_a:
-                if pom in element:
-                    pom = pom.replace("Katowice","Kato")
-                    pom = pom.replace("20","")
-                    pom = pom.replace(" | "," ")
-                    if first == True:   
-                        sticker_names.append(pom)
-                        first = False
-                    elif first == False:
-                        sticker_names.append(", " + pom)
-
-        else:
-            continue
-    sticker_names = ''.join(sticker_names) 
-    sticker_normal_text += "[H] " + xyz[5] + " w/ " + sticker_names + "\n"
-    stickered_guns += 1
-                    
-normal_text = ''.join(normal_text)
-sticker_normal_text = ''.join(sticker_normal_text)
-    
-if(normal_guns == True and stickered_guns == 0):
-    print("Niestety nie ma przedmiotów dostępnych na wymianę")
-    raise SystemExit(0)
+normal_guns, stickered_guns = update_and_find()
 
 bo = "Crown Foil on an Ak-47 Redline Any Pos <0.20 Float Any Wear Not Scratched"
 Want_normal = "Katowice 2014 Normal/Holo, Katowice 2015, Crown, Howling Dawn Stickers Applied On Guns "
 Want_reddit = Want_normal + "B/O " + bo #nie zmieniaj
 ending = "\nYou can add me if you want I don't bite :D \n \ntradelink: https://steamcommunity.com/tradeoffer/new/?partner=271370812&token=eHAwcnd9" #nie zmieniaj
 title_normal = "[W] "+ Want_normal + "\n \n"
-
-if(normal_text == ""):
-    selftext_normal = sticker_normal_text + ending
-elif(sticker_normal_text == ""):
-    selftext_normal = normal_text + ending
-else:
-    selftext_normal = normal_text + "\n" + sticker_normal_text + ending
 
 if(normal_guns == True):
     buyout = "\n \n B/O " + bo + "\n \n" #dodać program
@@ -602,7 +605,7 @@ if(normal_guns == True):
     title_reddit, x, y = get_title_reddit(Want_reddit, 3, 300)
     reddit_text = adv_main_reddit(3, 30000, many)
     selftext_reddit = buyout + reddit_text + ending + "\n \nThe prices are negotiable"#nie zmieniaj
-    advertisment_reddit(title_reddit,selftext_reddit)
+    #advertisment_reddit(title_reddit,selftext_reddit)
     time.sleep(5)
 
 if(stickered_guns > 0 or normal_guns == True):
@@ -613,7 +616,7 @@ if(stickered_guns > 0 or normal_guns == True):
     options.add_argument(r"user-data-dir=C:\Users\Michal\AppData\Local\Google\Chrome\User Data\Profile 1")
     driver = webdriver.Chrome(executable_path=r'C:\Users\Michal\Desktop\projekty\chromedriver.exe', options = options)
 
-    adv_main_steam(3,1000,title_normal,selftext_normal)
+    selftext_normal = adv_main_steam(3,1000,title_normal)
 
     advertisment_discussion_tab(title_normal,selftext_normal)
     time.sleep(5)
