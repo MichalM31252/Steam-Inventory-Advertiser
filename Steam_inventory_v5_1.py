@@ -118,7 +118,7 @@ def get_title_reddit(Want_reddit, limit, limit_title):
     x = 0
     y = 0
     pom = True
-    mycursor.execute("SELECT market_hash_name_shorter, count(market_hash_name) as name_count, price from items WHERE tradeable = 1 GROUP BY market_hash_name having name_count = 1 UNION ALL SELECT market_hash_name_shorter, count(market_hash_name) as name_count, price from items_with_stickers WHERE tradeable = 1 AND has_expensive_stickers = 0 GROUP BY market_hash_name having name_count = 1 ORDER BY price DESC")
+    mycursor.execute("SELECT market_hash_name_shorter, count(*) as name_count, price from items WHERE tradeable = 1 GROUP BY market_hash_name having name_count = 1 UNION ALL SELECT market_hash_name_shorter, count(*) as name_count, price from items_with_stickers WHERE tradeable = 1 AND has_expensive_stickers = 0 GROUP BY market_hash_name having name_count = 1 ORDER BY price DESC")
     myresult = mycursor.fetchall() 
     if myresult:
         print(myresult)
@@ -173,7 +173,7 @@ def adv_main_reddit(limit, subreddit_limit, many):
         reddit_text = "Market Name | Float | Screenshot | Inspectlink | \n :--|:--:|:--:|:--:|--: \n"
     
     global normal_guns
-    mycursor.execute("SELECT market_hash_name_short, market_hash_name_shorter, inspect_link, item_float, screenshot, price, count(market_hash_name) as name_count from items WHERE tradeable = 1 GROUP BY market_hash_name having name_count = 1 UNION ALL SELECT market_hash_name_short, market_hash_name_shorter, inspect_link, item_float, screenshot, price, count(market_hash_name) as name_count from items_with_stickers WHERE tradeable = 1 AND has_expensive_stickers = 0 GROUP BY market_hash_name having name_count = 1 ORDER BY price ASC")
+    mycursor.execute("SELECT market_hash_name_short, market_hash_name_shorter, inspect_link, item_float, screenshot, price, count(*) as name_count from items WHERE tradeable = 1 GROUP BY market_hash_name having name_count = 1 UNION ALL SELECT market_hash_name_short, market_hash_name_shorter, inspect_link, item_float, screenshot, price, count(*) as name_count from items_with_stickers WHERE tradeable = 1 AND has_expensive_stickers = 0 GROUP BY market_hash_name having name_count = 1 ORDER BY price ASC")
     myresult = mycursor.fetchall() 
     if myresult:
         print("asdasdafsvervtjynj: ",myresult)
@@ -205,55 +205,48 @@ def adv_main_reddit(limit, subreddit_limit, many):
 
     return reddit_text
 
-def adv_main_steam(limit,steam_group_limit,title_normal):
-    selftext_normal = ""
-    normal_text = ""
-    mycursor.execute("SELECT market_hash_name_shorter, count(market_hash_name) as name_count, price from items WHERE tradeable = 1 GROUP BY market_hash_name having name_count = 1 UNION ALL SELECT market_hash_name_shorter, count(market_hash_name) as name_count, price from items_with_stickers WHERE tradeable = 1 AND has_expensive_stickers = 0 GROUP BY market_hash_name having name_count = 1 ORDER BY price DESC")
-    myresult = mycursor.fetchall() 
-    if myresult:
-        print(myresult)
-        for xyz in myresult:
-            print(xyz[0]) #market_hash_name_shorter
-            print(xyz[1]) #name_count
-            print(xyz[2]) #price
+def adv_main_steam_normal(myresult_normal,i):
+    normal_dod = ""
+    if myresult_normal:
+        try:
+            print(myresult_normal)
+            print(myresult_normal[i][0]) #market_hash_name_shorter
+            print(myresult_normal[i][1]) #name_count
+            print(myresult_normal[i][2]) #price
             print("")
 
-            if xyz[2] >= limit:
-                add_to_normal = ""
-                pomoc = [title_normal, normal_text, add_to_normal]
-                a = sum(len(i) for i in pomoc)
-                if a <= steam_group_limit:
-                    if xyz[1] == 1:
-                        add_to_normal = "[H] " + xyz[0] + "\n"
-                    else:
-                        add_to_normal = "[H] " + xyz[1] + "x " + xyz[0] + "\n"
-                else:
-                    limit += 0.1
-                    adv_main_steam(limit,steam_group_limit,title_normal,normal_text)
+        except IndexError:
+            print("IndexError normal: ",i)
+            return normal_dod
 
-                normal_text += add_to_normal
+        if myresult_normal[i][1] == 1:
+            normal_dod = "[H] " + myresult_normal[i][0] + "\n"
+        else:
+            normal_dod = "[H] " + myresult_normal[i][1] + "x " + myresult_normal[i][0] + "\n"
 
-    sticker_normal_text = ""
-    mycursor.execute("SELECT name FROM stickers",)
-    stickers_a = mycursor.fetchall() 
-    mycursor.execute("SELECT stickers_applied.sticker_1, stickers_applied.sticker_2, stickers_applied.sticker_3, stickers_applied.sticker_4, stickers_applied.sticker_5, items_with_stickers.market_hash_name_shorter FROM stickers_applied JOIN items_with_stickers ON (stickers_applied.item_id = items_with_stickers.item_id AND items_with_stickers.has_expensive_stickers = 1 AND items_with_stickers.tradeable = 1) ORDER BY items_with_stickers.price ASC",)
-    myresult = mycursor.fetchall() 
-    print(myresult)
-    for xyz in myresult:
-        print(xyz[0]) #sticker_1
-        print(xyz[1]) #sticker_2
-        print(xyz[2]) #sticker_3
-        print(xyz[3]) #sticker_4
-        print(xyz[4]) #sticker_5
-        print(xyz[5]) #market_hash_name_shorter
-        print("")
+    return normal_dod
+
+def adv_main_steam_stickers(myresult_stickers_applied,stickers_all_exp,i):
+    sticker_normal_text_dod = ""
+    if myresult_stickers_applied:
+        try:
+            print(myresult_stickers_applied[i][0]) #sticker_1
+            print(myresult_stickers_applied[i][1]) #sticker_2
+            print(myresult_stickers_applied[i][2]) #sticker_3
+            print(myresult_stickers_applied[i][3]) #sticker_4
+            print(myresult_stickers_applied[i][4]) #sticker_5
+            print(myresult_stickers_applied[i][5]) #market_hash_name_shorter
+            print("")
+        except IndexError:
+            print("IndexError stickers: ",i)
+            return sticker_normal_text_dod
 
         sticker_names = []
         first = True
         for n in range(0,5):
-            pom = str(xyz[n])
+            pom = str(myresult_stickers_applied[i][n])
             if pom != "":
-                for element in stickers_a:
+                for element in stickers_all_exp:
                     if pom in element:
                         pom = pom.replace("Katowice","Kato")
                         pom = pom.replace("20","")
@@ -266,7 +259,40 @@ def adv_main_steam(limit,steam_group_limit,title_normal):
             else:
                 continue
         sticker_names = ''.join(sticker_names) 
-        sticker_normal_text += "[H] " + xyz[5] + " w/ " + sticker_names + "\n"
+        sticker_normal_text_dod = "[H] " + myresult_stickers_applied[i][5] + " w/ " + sticker_names + "\n"
+
+    return sticker_normal_text_dod
+
+def adv_main_steam_all(limit,steam_group_limit,title_normal):
+    bigger_tuple_length = 0
+    normal_text = ""
+    sticker_normal_text = ""
+    selftext_normal = ""
+    mycursor.execute(f"SELECT market_hash_name_shorter, count(market_hash_name) as name_count, price from items WHERE tradeable = 1 AND price >= {limit} GROUP BY market_hash_name having name_count = 1 UNION ALL SELECT market_hash_name_shorter, count(*) as name_count, price from items_with_stickers WHERE tradeable = 1 AND has_expensive_stickers = 0 AND price >= {limit} GROUP BY market_hash_name having name_count = 1 ORDER BY price DESC")
+    myresult_normal = mycursor.fetchall() 
+    mycursor.execute("SELECT name FROM stickers",)
+    stickers_all_exp = mycursor.fetchall() 
+    mycursor.execute("SELECT stickers_applied.sticker_1, stickers_applied.sticker_2, stickers_applied.sticker_3, stickers_applied.sticker_4, stickers_applied.sticker_5, items_with_stickers.market_hash_name_shorter FROM stickers_applied JOIN items_with_stickers ON (stickers_applied.item_id = items_with_stickers.item_id AND items_with_stickers.has_expensive_stickers = 1 AND items_with_stickers.tradeable = 1) ORDER BY items_with_stickers.price ASC",)
+    myresult_stickers_applied = mycursor.fetchall() 
+
+    if len(myresult_normal) >= len(myresult_stickers_applied):
+        bigger_tuple_length = len(myresult_normal)
+    elif len(myresult_normal) < len(stickers_all_exp):
+        bigger_tuple_length = len(myresult_stickers_applied)
+
+    for i in range(0,bigger_tuple_length):
+        normal_dod = adv_main_steam_normal(myresult_normal,i)
+        if len(normal_text) + len(sticker_normal_text) + len(title_normal) + len(normal_dod) < steam_group_limit:
+            normal_text += normal_dod
+        else:
+            limit += 3
+            adv_main_steam_all(limit,steam_group_limit,title_normal)
+        sticker_normal_text_dod = adv_main_steam_stickers(myresult_stickers_applied,stickers_all_exp,i)
+        if len(normal_text) + len(sticker_normal_text) + len(title_normal) < steam_group_limit:
+            sticker_normal_text += sticker_normal_text_dod
+        else:
+            limit += 3
+            adv_main_steam_all(limit,steam_group_limit,title_normal)
 
     if(normal_text == ""):
         selftext_normal = sticker_normal_text + ending
@@ -275,7 +301,7 @@ def adv_main_steam(limit,steam_group_limit,title_normal):
     else:
         selftext_normal = normal_text + "\n" + sticker_normal_text + ending
 
-        return selftext_normal
+    return selftext_normal
 
 def advertisment_reddit(title_reddit,selftext_reddit):
     reddit = praw.Reddit(client_id='lIA2AeFihJSYfw',
@@ -616,7 +642,7 @@ if(stickered_guns > 0 or normal_guns == True):
     options.add_argument(r"user-data-dir=C:\Users\Michal\AppData\Local\Google\Chrome\User Data\Profile 1")
     driver = webdriver.Chrome(executable_path=r'C:\Users\Michal\Desktop\projekty\chromedriver.exe', options = options)
 
-    selftext_normal = adv_main_steam(3,1000,title_normal)
+    selftext_normal = adv_main_steam_all(3,1000,title_normal)
 
     advertisment_discussion_tab(title_normal,selftext_normal)
     time.sleep(5)
