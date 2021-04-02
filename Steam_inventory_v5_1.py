@@ -27,6 +27,7 @@ mycursor = mydb.cursor(buffered=True)
 session = requests.Session()
 
 def check_expensive():
+    pom = 0
     mycursor.execute("SELECT items_with_stickers.has_expensive_stickers, stickers_applied.sticker_1, stickers_applied.sticker_2, stickers_applied.sticker_3, stickers_applied.sticker_4, stickers_applied.sticker_5, items_with_stickers.item_id FROM items_with_stickers INNER JOIN stickers_applied ON items_with_stickers.item_id = stickers_applied.item_id WHERE items_with_stickers.has_expensive_stickers = 0",) ############
     myresult = mycursor.fetchall() 
     mycursor.execute("SELECT name from stickers",) ############
@@ -35,9 +36,10 @@ def check_expensive():
         for sticker in stickers_exp:
             for i in range(1,6):
                 if element[i] in sticker:
-                    mycursor.execute("UPDATE items_with_stickers SET `has_expensive_stickers` = 1 WHERE `item_id` = %s", (element[6],))
-                    mydb.commit()
-                    break
+                    pom += 1
+        mycursor.execute("UPDATE items_with_stickers SET `has_expensive_stickers` = %s WHERE `item_id` = %s", (pom,element[6],))
+        mydb.commit()
+        break
 
 def check_many():
     many = False
@@ -70,7 +72,6 @@ def update_and_find():
     stickered_guns = False
     mycursor.execute("SELECT `item_id`,`tradeable`,`tradeable_date`, `price` FROM items",)
     myresult = mycursor.fetchall()
-    print(myresult)
     teraz = datetime.datetime.now().replace(microsecond=0)
     value = None
     pom1 = 0
@@ -99,8 +100,8 @@ def update_and_find():
                 mycursor.execute("UPDATE items_with_stickers SET `tradeable` = 1, `tradeable_date` = %s WHERE `item_id` = %s", (value,element[0],))
                 mydb.commit()
         elif element[1] == 1 and element[3] > 3:
-            if element[4] == 1:
-                pom2 += 1 
+            if element[4] >= 1:
+                pom2 += element[4] 
                 if pom2 >= 2:
                     stickered_guns = True
             if element[1] == 1 and element[3] > 45:
@@ -120,18 +121,27 @@ def get_title_reddit(Want_reddit, limit, limit_title):
     pom = True
     mycursor.execute("SELECT market_hash_name_shorter, count(*) as name_count, price from items WHERE tradeable = 1 GROUP BY market_hash_name having name_count = 1 UNION ALL SELECT market_hash_name_shorter, count(*) as name_count, price from items_with_stickers WHERE tradeable = 1 AND has_expensive_stickers = 0 GROUP BY market_hash_name having name_count = 1 ORDER BY price DESC")
     myresult = mycursor.fetchall() 
+    print(myresult)
     if myresult:
-        print(myresult)
         for xyz in myresult:
             print(xyz[0]) #market_hash_name_shorter
             print(xyz[1]) #name_count
             print(xyz[2]) #price
             print("")
 
+            print("Limit: ",limit)
             if xyz[2] >= limit:
-
                 y += xyz[2]
                 x += 1
+
+        for xyz in myresult:
+            print(xyz[0]) #market_hash_name_shorter
+            print(xyz[1]) #name_count
+            print(xyz[2]) #price
+            print("")
+
+            print("Limit: ",limit)
+            if xyz[2] >= limit:
                 pom_text = ""
 
                 if pom == False:
@@ -176,7 +186,6 @@ def adv_main_reddit(limit, subreddit_limit, many):
     mycursor.execute("SELECT market_hash_name_short, market_hash_name_shorter, inspect_link, item_float, screenshot, price, count(*) as name_count from items WHERE tradeable = 1 GROUP BY market_hash_name having name_count = 1 UNION ALL SELECT market_hash_name_short, market_hash_name_shorter, inspect_link, item_float, screenshot, price, count(*) as name_count from items_with_stickers WHERE tradeable = 1 AND has_expensive_stickers = 0 GROUP BY market_hash_name having name_count = 1 ORDER BY price ASC")
     myresult = mycursor.fetchall() 
     if myresult:
-        print("asdasdafsvervtjynj: ",myresult)
         for xyz in myresult:
             print(xyz[0]) #market_hash_name_short
             print(xyz[1]) #market_hash_name_shorter
@@ -205,49 +214,40 @@ def adv_main_reddit(limit, subreddit_limit, many):
 
     return reddit_text
 
-def adv_main_steam_normal(myresult_normal,i):
+def adv_main_steam_normal(element):
     normal_dod = ""
-    if myresult_normal:
-        try:
-            print(myresult_normal)
-            print(myresult_normal[i][0]) #market_hash_name_shorter
-            print(myresult_normal[i][1]) #name_count
-            print(myresult_normal[i][2]) #price
-            print("")
+    if element:
+        #print()
+        #print(element[0]) #market_hash_name_shorter
+        #print(element[1]) #name_count
+        #print(element[2]) #price
+        #print("")
 
-        except IndexError:
-            print("IndexError normal: ",i)
-            return normal_dod
-
-        if myresult_normal[i][1] == 1:
-            normal_dod = "[H] " + myresult_normal[i][0] + "\n"
+        if element[1] == 1:
+            normal_dod = "[H] " + element[0] + "\n"
         else:
-            normal_dod = "[H] " + myresult_normal[i][1] + "x " + myresult_normal[i][0] + "\n"
+            normal_dod = "[H] " + element[1] + "x " + element[0] + "\n"
 
     return normal_dod
 
-def adv_main_steam_stickers(myresult_stickers_applied,stickers_all_exp,i):
+def adv_main_steam_stickers(stickers_all_exp,element):
     sticker_normal_text_dod = ""
-    if myresult_stickers_applied:
-        try:
-            print(myresult_stickers_applied[i][0]) #sticker_1
-            print(myresult_stickers_applied[i][1]) #sticker_2
-            print(myresult_stickers_applied[i][2]) #sticker_3
-            print(myresult_stickers_applied[i][3]) #sticker_4
-            print(myresult_stickers_applied[i][4]) #sticker_5
-            print(myresult_stickers_applied[i][5]) #market_hash_name_shorter
-            print("")
-        except IndexError:
-            print("IndexError stickers: ",i)
-            return sticker_normal_text_dod
+    if element:
+        #print(element[0]) #sticker_1
+        #print(element[1]) #sticker_2
+        #print(element[2]) #sticker_3
+        #print(element[3]) #sticker_4
+        #print(element[4]) #sticker_5
+        #print(element[5]) #market_hash_name_shorter
+        #print("")
 
         sticker_names = []
         first = True
         for n in range(0,5):
-            pom = str(myresult_stickers_applied[i][n])
+            pom = str(element[n])
             if pom != "":
-                for element in stickers_all_exp:
-                    if pom in element:
+                for element2 in stickers_all_exp:
+                    if pom in element2:
                         pom = pom.replace("Katowice","Kato")
                         pom = pom.replace("20","")
                         pom = pom.replace(" | "," ")
@@ -259,47 +259,48 @@ def adv_main_steam_stickers(myresult_stickers_applied,stickers_all_exp,i):
             else:
                 continue
         sticker_names = ''.join(sticker_names) 
-        sticker_normal_text_dod = "[H] " + myresult_stickers_applied[i][5] + " w/ " + sticker_names + "\n"
+        sticker_normal_text_dod = "[H] " + element[5] + " w/ " + sticker_names + "\n"
 
     return sticker_normal_text_dod
 
-def adv_main_steam_all(limit,steam_group_limit,title_normal):
-    bigger_tuple_length = 0
+def adv_main_steam_all(myresult_normal,stickers_all_exp,myresult_stickers_applied,steam_group_limit,title_normal):
+    
     normal_text = ""
     sticker_normal_text = ""
     selftext_normal = ""
-    mycursor.execute(f"SELECT market_hash_name_shorter, count(market_hash_name) as name_count, price from items WHERE tradeable = 1 AND price >= {limit} GROUP BY market_hash_name having name_count = 1 UNION ALL SELECT market_hash_name_shorter, count(*) as name_count, price from items_with_stickers WHERE tradeable = 1 AND has_expensive_stickers = 0 AND price >= {limit} GROUP BY market_hash_name having name_count = 1 ORDER BY price DESC")
-    myresult_normal = mycursor.fetchall() 
-    mycursor.execute("SELECT name FROM stickers",)
-    stickers_all_exp = mycursor.fetchall() 
-    mycursor.execute("SELECT stickers_applied.sticker_1, stickers_applied.sticker_2, stickers_applied.sticker_3, stickers_applied.sticker_4, stickers_applied.sticker_5, items_with_stickers.market_hash_name_shorter FROM stickers_applied JOIN items_with_stickers ON (stickers_applied.item_id = items_with_stickers.item_id AND items_with_stickers.has_expensive_stickers = 1 AND items_with_stickers.tradeable = 1) ORDER BY items_with_stickers.price ASC",)
-    myresult_stickers_applied = mycursor.fetchall() 
 
-    if len(myresult_normal) >= len(myresult_stickers_applied):
-        bigger_tuple_length = len(myresult_normal)
-    elif len(myresult_normal) < len(stickers_all_exp):
-        bigger_tuple_length = len(myresult_stickers_applied)
+    for element in myresult_normal:
+        normal_text += adv_main_steam_normal(element)
+    print()
+    print("normal_text: ",normal_text)
+    print()
+    for element in myresult_stickers_applied:
+        sticker_normal_text += adv_main_steam_stickers(stickers_all_exp,element)
+    print()
+    print("sticker_normal_text: ",sticker_normal_text)
+    print()
 
-    for i in range(0,bigger_tuple_length):
-        normal_dod = adv_main_steam_normal(myresult_normal,i)
-        if len(normal_text) + len(sticker_normal_text) + len(title_normal) + len(normal_dod) < steam_group_limit:
-            normal_text += normal_dod
+    if len(normal_text) + len(sticker_normal_text) + len(title_normal) > steam_group_limit:
+        if len(myresult_normal) > len(myresult_stickers_applied):
+            myresult_normal = myresult_normal[:-1]
+            return adv_main_steam_all(myresult_normal,stickers_all_exp,myresult_stickers_applied,steam_group_limit,title_normal)
+        elif len(myresult_normal) <= len(myresult_stickers_applied):
+            myresult_stickers_applied = myresult_stickers_applied[:-1]
+            return adv_main_steam_all(myresult_normal,stickers_all_exp,myresult_stickers_applied,steam_group_limit,title_normal)
+
+    if len(normal_text) + len(sticker_normal_text) + len(title_normal) < steam_group_limit:
+        if(normal_text == "" and sticker_normal_text != ""):
+            selftext_normal = sticker_normal_text + ending
+        if(sticker_normal_text == "" and normal_text != ""):
+            selftext_normal = normal_text + ending
         else:
-            limit += 3
-            adv_main_steam_all(limit,steam_group_limit,title_normal)
-        sticker_normal_text_dod = adv_main_steam_stickers(myresult_stickers_applied,stickers_all_exp,i)
-        if len(normal_text) + len(sticker_normal_text) + len(title_normal) < steam_group_limit:
-            sticker_normal_text += sticker_normal_text_dod
-        else:
-            limit += 3
-            adv_main_steam_all(limit,steam_group_limit,title_normal)
+            selftext_normal = normal_text + "\n" + sticker_normal_text + ending
 
-    if(normal_text == ""):
-        selftext_normal = sticker_normal_text + ending
-    elif(sticker_normal_text == ""):
-        selftext_normal = normal_text + ending
-    else:
-        selftext_normal = normal_text + "\n" + sticker_normal_text + ending
+    print()
+    print("normal_text: ",normal_text)
+    print("sticker_normal_text: ",sticker_normal_text) 
+    print("selftext_normal",selftext_normal) 
+    print()       
 
     return selftext_normal
 
@@ -375,14 +376,13 @@ class CSGO_item():
     def screenshot_post(self,inspect_link):
         url = "https://market-api.swap.gg/v1/screenshot"
         data = {
-        'limit': 25,
-        "inspectLink": self.inspect_link
+            "inspectLink": self.inspect_link.replace("%20", " ")
         } 
         headers = {
-            'content-type': 'application/json',
-            'Authorization': '441c4839-be5b-4731-8710-781d761d804a' #bardzo możliwe, że to powinno być w auth header
+            'Content-type': 'application/json',
+            'Authorization': '82fd7fee-819a-49d4-af0d-dda2a499eac6' #bardzo możliwe, że to powinno być w auth header
         }
-        response_screenshot = session.post(url=url, json=data, headers=headers) # dorób time.sleep(5)
+        response_screenshot = session.post(url=url, json=data, headers=headers) # json=data
         if(response_screenshot.json()['status'] == "OK"):
             print(response_screenshot.json())
             if(response_screenshot.json()['result']["state"] == "COMPLETED"):
@@ -444,7 +444,6 @@ params = {
 r = requests.get(url=url, params=params)
 
 paczka_json = r.json()
-print(paczka_json)
 
 try:
     success = str(paczka_json["success"])
@@ -503,7 +502,6 @@ for element1 in paczka_inv_dict:
     class_id_inv = paczka_inv_dict[element1]['classid']
     instance_id_inv = paczka_inv_dict[element1]['instanceid']
     item_id = paczka_inv_dict[element1]['id']
-    
 
     for element2 in paczka_des_dict:
         item_type = paczka_des_dict[element2]['tags'][0]['name']
@@ -608,6 +606,8 @@ for element1 in paczka_inv_dict:
                             break
                         objekty[market_hash_name] = [CSGO_item(item_id, market_hash_name, market_hash_name_short, market_hash_name_shorter, price, inspect_link, sticker_list, sticker_1, sticker_2, sticker_3, sticker_4, sticker_5, has_expensive_stickers, screenshot, screenshot_requestId, item_float, exterior, tradeable, tradeable_date)]         
 
+print(objekty.items())
+
 for name, lista_obj in objekty.items():
     for objekt in lista_obj:
         objekt.screenshot_post(objekt.inspect_link)
@@ -618,7 +618,7 @@ check_expensive()
 
 normal_guns, stickered_guns = update_and_find()
 
-bo = "Crown Foil on an Ak-47 Redline Any Pos <0.20 Float Any Wear Not Scratched"
+bo = "HellRaisers (Holo) Katowice 2014 on an AWP Redline MW Best Pos 0.11 > Float"
 Want_normal = "Katowice 2014 Normal/Holo, Katowice 2015, Crown, Howling Dawn Stickers Applied On Guns "
 Want_reddit = Want_normal + "B/O " + bo #nie zmieniaj
 ending = "\nYou can add me if you want I don't bite :D \n \ntradelink: https://steamcommunity.com/tradeoffer/new/?partner=271370812&token=eHAwcnd9" #nie zmieniaj
@@ -631,7 +631,7 @@ if(normal_guns == True):
     title_reddit, x, y = get_title_reddit(Want_reddit, 3, 300)
     reddit_text = adv_main_reddit(3, 30000, many)
     selftext_reddit = buyout + reddit_text + ending + "\n \nThe prices are negotiable"#nie zmieniaj
-    #advertisment_reddit(title_reddit,selftext_reddit)
+    advertisment_reddit(title_reddit,selftext_reddit)
     time.sleep(5)
 
 if(stickered_guns > 0 or normal_guns == True):
@@ -642,7 +642,14 @@ if(stickered_guns > 0 or normal_guns == True):
     options.add_argument(r"user-data-dir=C:\Users\Michal\AppData\Local\Google\Chrome\User Data\Profile 1")
     driver = webdriver.Chrome(executable_path=r'C:\Users\Michal\Desktop\projekty\chromedriver.exe', options = options)
 
-    selftext_normal = adv_main_steam_all(3,1000,title_normal)
+    mycursor.execute("SELECT market_hash_name_shorter, count(market_hash_name) as name_count, price from items WHERE tradeable = 1 AND price >= 3 GROUP BY market_hash_name having name_count = 1 UNION ALL SELECT market_hash_name_shorter, count(*) as name_count, price from items_with_stickers WHERE tradeable = 1 AND has_expensive_stickers = 0 AND price >= 3 GROUP BY market_hash_name having name_count = 1 ORDER BY price DESC",)
+    myresult_normal = mycursor.fetchall() 
+    mycursor.execute("SELECT name FROM stickers",)
+    stickers_all_exp = mycursor.fetchall() 
+    mycursor.execute("SELECT stickers_applied.sticker_1, stickers_applied.sticker_2, stickers_applied.sticker_3, stickers_applied.sticker_4, stickers_applied.sticker_5, items_with_stickers.market_hash_name_shorter FROM stickers_applied JOIN items_with_stickers ON (stickers_applied.item_id = items_with_stickers.item_id AND items_with_stickers.has_expensive_stickers > 0 AND items_with_stickers.tradeable = 1) ORDER BY items_with_stickers.has_expensive_stickers DESC",)
+    myresult_stickers_applied = mycursor.fetchall() 
+
+    selftext_normal = adv_main_steam_all(myresult_normal,stickers_all_exp,myresult_stickers_applied,steam_group_limit,title_normal)
 
     advertisment_discussion_tab(title_normal,selftext_normal)
     time.sleep(5)
@@ -707,3 +714,5 @@ if(stickered_guns > 0 or normal_guns == True):
     advertisment_steam_groups(title_normal,selftext_normal,"https://steamcommunity.com/groups/wymieniamy-skiny")
 
     driver.quit()
+
+print("less goo")
