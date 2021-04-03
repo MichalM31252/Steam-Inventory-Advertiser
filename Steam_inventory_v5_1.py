@@ -165,9 +165,9 @@ def get_title_reddit(Want_reddit, limit, limit_title):
                 else:
                     break
 
-        if pom == False:
+        if x > 1:
             Have = str(x) + " items worth around: " + str(y) + "$ "
-        if pom:
+        if x == 1:
             Have = str(x) + " item worth around: " + str(y) + "$ "
             
         title_reddit = "[H] " + Have + "(" + title_string + ")" + " [W] " + Want_reddit
