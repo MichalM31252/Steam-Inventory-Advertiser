@@ -14,6 +14,7 @@ import mysql.connector
 # - usunięcie niepotrzebnych spacji w reklamie steam
 # - usunięcie niepotrzebnych bibliotek 
 # - dodanie sprawdzania warunku czy przedmiot jest wystarczająco drogi
+# - dodanie limitów do reklam steam i reddit
 
 mydb = mysql.connector.connect(
   host="localhost",
@@ -164,9 +165,9 @@ def get_title_reddit(Want_reddit, limit, limit_title):
                 else:
                     break
 
-        if many:
+        if pom == False:
             Have = str(x) + " items worth around: " + str(y) + "$ "
-        elif many == False:
+        if pom:
             Have = str(x) + " item worth around: " + str(y) + "$ "
             
         title_reddit = "[H] " + Have + "(" + title_string + ")" + " [W] " + Want_reddit
@@ -689,7 +690,6 @@ if(stickered_guns > 0 or normal_guns == True):
     advertisment_steam_groups(title_normal,selftext_normal,"https://steamcommunity.com/groups/CSGOSkinTradingAndMore")
     advertisment_steam_groups(title_normal,selftext_normal,"https://steamcommunity.com/groups/casedropeu")
     advertisment_steam_groups(title_normal,selftext_normal,"https://steamcommunity.com/groups/tradesmart")
-    advertisment_steam_groups(title_normal,selftext_normal,"https://steamcommunity.com/groups/skinport")
     advertisment_steam_groups(title_normal,selftext_normal,"https://steamcommunity.com/groups/tdm_jesus")
     advertisment_steam_groups(title_normal,selftext_normal,"https://steamcommunity.com/groups/realCSGO64")
     advertisment_steam_groups(title_normal,selftext_normal,"https://steamcommunity.com/groups/SkinTrade")
@@ -712,7 +712,6 @@ if(stickered_guns > 0 or normal_guns == True):
     advertisment_steam_groups(title_normal,selftext_normal,"https://steamcommunity.com/groups/csgo_traders")
     advertisment_steam_groups(title_normal,selftext_normal,"https://steamcommunity.com/groups/csgosum")
     advertisment_steam_groups(title_normal,selftext_normal,"https://steamcommunity.com/groups/wymieniamy-skiny")
+    advertisment_steam_groups(title_normal,selftext_normal,"https://steamcommunity.com/groups/CROWNBOYS")
 
     driver.quit()
-
-print("less goo")
