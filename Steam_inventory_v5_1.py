@@ -117,6 +117,7 @@ def update_and_find():
 def get_title_reddit(Want_reddit, limit, limit_title):
     title_reddit = ""
     title_string = ""
+    pomx = 0
     x = 0
     y = 0
     pom = True
@@ -135,6 +136,17 @@ def get_title_reddit(Want_reddit, limit, limit_title):
                 y += xyz[2]
                 x += 1
 
+        print()
+        print("limit: ",limit)
+        print("x: ",x)
+        print("y: ",y)
+        print()
+
+        if x > 1:
+            Have = str(x) + " items worth around: " + str(y) + "$ "
+        if x == 1:
+            Have = str(x) + " item worth around: " + str(y) + "$ "
+
         for xyz in myresult:
             print(xyz[0]) #market_hash_name_shorter
             print(xyz[1]) #name_count
@@ -143,6 +155,7 @@ def get_title_reddit(Want_reddit, limit, limit_title):
 
             print("Limit: ",limit)
             if xyz[2] >= limit:
+                pomx += 1
                 pom_text = ""
 
                 if pom == False:
@@ -157,20 +170,27 @@ def get_title_reddit(Want_reddit, limit, limit_title):
                     else:
                         pom_text = str(xyz[1]) + "x " + str(xyz[0])
                 
-                Have = str(x) + " items worth around: " + str(y) + "$ "
-                pomoc = ["[H] ", Have, "(", title_string, ")", " [W] ", Want_reddit, pom_text]
-                a = sum(len(i) for i in pomoc)
-                if(a <= limit_title): 
-                    title_string += pom_text
-                else:
-                    break
+                if pomx < x:
+                    pomoc = ["[H] ", Have, "(", title_string ,")", " [W] ", Want_reddit]
+                if pomx == x:
+                    pomoc = ["[H] ", Have, "(", title_string ,")", " [W] ", Want_reddit]
 
-        if x > 1:
-            Have = str(x) + " items worth around: " + str(y) + "$ "
-        if x == 1:
-            Have = str(x) + " item worth around: " + str(y) + "$ "
+                a = len(''.join(pomoc))
+                if pomx < x:
+                    if(a + 5 + len(pom_text) <= limit_title): 
+                        title_string += pom_text
+                    else:
+                        break
+                if pomx == x:
+                    if(a + len(pom_text) + 1 <= limit_title): 
+                        title_string += pom_text
+                    else:
+                        break
             
-        title_reddit = "[H] " + Have + "(" + title_string + ")" + " [W] " + Want_reddit
+        if pomx < x:
+            title_reddit = "[H] " + Have + "(" + title_string + " etc." + ")" + " [W] " + Want_reddit
+        if pomx == x:
+            title_reddit = "[H] " + Have + "(" + title_string + ")" + " [W] " + Want_reddit
 
         return title_reddit, x, y
     else:
@@ -272,14 +292,8 @@ def adv_main_steam_all(myresult_normal,stickers_all_exp,myresult_stickers_applie
 
     for element in myresult_normal:
         normal_text += adv_main_steam_normal(element)
-    print()
-    print("normal_text: ",normal_text)
-    print()
     for element in myresult_stickers_applied:
         sticker_normal_text += adv_main_steam_stickers(stickers_all_exp,element)
-    print()
-    print("sticker_normal_text: ",sticker_normal_text)
-    print()
 
     if len(normal_text) + len(sticker_normal_text) + len(title_normal) > steam_group_limit:
         if len(myresult_normal) > len(myresult_stickers_applied):
@@ -295,13 +309,7 @@ def adv_main_steam_all(myresult_normal,stickers_all_exp,myresult_stickers_applie
         if(sticker_normal_text == "" and normal_text != ""):
             selftext_normal = normal_text + ending
         else:
-            selftext_normal = normal_text + "\n" + sticker_normal_text + ending
-
-    print()
-    print("normal_text: ",normal_text)
-    print("sticker_normal_text: ",sticker_normal_text) 
-    print("selftext_normal",selftext_normal) 
-    print()       
+            selftext_normal = normal_text + "\n" + sticker_normal_text + ending      
 
     return selftext_normal
 
@@ -619,7 +627,7 @@ check_expensive()
 
 normal_guns, stickered_guns = update_and_find()
 
-bo = "HellRaisers (Holo) Katowice 2014 on an AWP Redline MW Best Pos 0.11 > Float"
+bo = "HellRaisers (Holo) | Katowice 2014 on AWP Redline MW Second Best Pos"
 Want_normal = "Katowice 2014 Normal/Holo, Katowice 2015, Crown, Howling Dawn Stickers Applied On Guns "
 Want_reddit = Want_normal + "B/O " + bo #nie zmieniaj
 ending = "\nYou can add me if you want I don't bite :D \n \ntradelink: https://steamcommunity.com/tradeoffer/new/?partner=271370812&token=eHAwcnd9" #nie zmieniaj
@@ -630,6 +638,7 @@ if(normal_guns == True):
     selftext_reddit = ""
     many = check_many()
     title_reddit, x, y = get_title_reddit(Want_reddit, 3, 300)
+    print(title_reddit)
     reddit_text = adv_main_reddit(3, 30000, many)
     selftext_reddit = buyout + reddit_text + ending + "\n \nThe prices are negotiable"#nie zmieniaj
     advertisment_reddit(title_reddit,selftext_reddit)
