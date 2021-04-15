@@ -204,7 +204,7 @@ def adv_main_reddit(limit, subreddit_limit, many):
         reddit_text = "Market Name | Float | Screenshot | Inspectlink | \n :--|:--:|:--:|:--:|--: \n"
     
     global normal_guns
-    mycursor.execute("SELECT market_hash_name_short, market_hash_name_shorter, inspect_link, item_float, screenshot, price, count(*) as name_count from items WHERE tradeable = 1 GROUP BY market_hash_name having name_count = 1 UNION ALL SELECT market_hash_name_short, market_hash_name_shorter, inspect_link, item_float, screenshot, price, count(*) as name_count from items_with_stickers WHERE tradeable = 1 AND has_expensive_stickers = 0 GROUP BY market_hash_name having name_count = 1 ORDER BY price ASC")
+    mycursor.execute("SELECT market_hash_name_short, market_hash_name_shorter, inspect_link, item_float, screenshot, price, count(*) as name_count from items WHERE tradeable = 1 GROUP BY market_hash_name having name_count = 1 UNION ALL SELECT market_hash_name_short, market_hash_name_shorter, inspect_link, item_float, screenshot, price, count(*) as name_count from items_with_stickers WHERE tradeable = 1 AND has_expensive_stickers = 0 GROUP BY market_hash_name having name_count = 1 ORDER BY price DESC")
     myresult = mycursor.fetchall() 
     if myresult:
         for xyz in myresult:
@@ -272,6 +272,7 @@ def adv_main_steam_stickers(stickers_all_exp,element):
                         pom = pom.replace("Katowice","Kato")
                         pom = pom.replace("20","")
                         pom = pom.replace(" | "," ")
+                        pom = pom.replace(".com","")
                         if first == True:   
                             sticker_names.append(pom)
                             first = False
@@ -321,7 +322,7 @@ def advertisment_reddit(title_reddit,selftext_reddit):
                         password='C~HQ6<K84~zb7g(')
                         
     reddit.validate_on_submit = True
-    reddit.subreddit('test').submit(title=title_reddit, selftext=selftext_reddit) #GlobalOffensiveTrade test
+    reddit.subreddit('GlobalOffensiveTrade').submit(title=title_reddit, selftext=selftext_reddit) #GlobalOffensiveTrade test
     time.sleep(4)
     print("Reddit post has been created")
 
