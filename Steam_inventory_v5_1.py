@@ -422,10 +422,9 @@ class CSGO_item():
                     mycursor.execute("INSERT INTO items (item_id, market_hash_name, market_hash_name_short, market_hash_name_shorter, price, inspect_link, exterior, item_float, screenshot, tradeable, tradeable_date) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)", (objekt.item_id, objekt.market_hash_name, objekt.market_hash_name_short, objekt.market_hash_name_shorter, objekt.price, objekt.inspect_link, objekt.exterior, objekt.item_float, objekt.screenshot, objekt.tradeable, objekt.tradeable_date))
                     mydb.commit() 
 
-                print("melon")
             elif(response_screenshot.json()['result']["state"] == "IN_QUEUE"):
                 print("IN_QUEUE \n")
-                time.sleep(180)
+                time.sleep(150)
                 self.screenshot_post(inspect_link)
             elif(response_screenshot.json()['result']["state"] == "FAILED"):
                 print("FAILED \n")              
@@ -518,7 +517,7 @@ for element1 in paczka_inv_dict:
         if(item_type == "Container" or item_type == "Sticker" or item_type == "Agent" or item_type == "Collectible" or item_type == "Tool" or item_type == "Music Kit"):
             continue
             
-        if(item_type == "Rifle" or item_type == "Pistol" or item_type == "SMG" or item_type == "Sniper Rifle" or item_type == "Gloves" or item_type == "Knife"):
+        if(item_type == "Rifle" or item_type == "Pistol" or item_type == "SMG" or item_type == "Sniper Rifle" or item_type == "Gloves" or item_type == "Knife" or item_type == "Shotgun" or item_type == "Machinegun"):
             class_id_des = paczka_des_dict[element2]['classid']
             instance_id_des = paczka_des_dict[element2]['instanceid']
 
@@ -529,12 +528,6 @@ for element1 in paczka_inv_dict:
                 name = paczka_des_dict[element2]['name']
                 market_hash_name = paczka_des_dict[element2]['market_hash_name']
                 market_hash_name_short = market_hash_name.replace(' | ',' ')
-
-                print(item_id,"\n")
-                val_pom = (item_id,)
-                print(val_pom,"\n")
-                val.append(val_pom,)
-                print(val,"\n")
 
                 mycursor.execute("SELECT item_id, COUNT(*) FROM items WHERE item_id = %s GROUP BY item_id", (item_id,)) ######
                 mycursor.fetchall()
@@ -551,7 +544,6 @@ for element1 in paczka_inv_dict:
                     continue
                 
                 if(market_hash_name not in black_list):
-
                     market_hash_name_shorter = market_hash_name_short.replace("(Factory New)","FN")
                     market_hash_name_shorter = market_hash_name_shorter.replace("(Minimal Wear)","MW")
                     market_hash_name_shorter = market_hash_name_shorter.replace("(Field-Tested)","FT")
@@ -583,7 +575,7 @@ for element1 in paczka_inv_dict:
                         for element in lista:
                             if(element in sticker_response):
                                 sticker_list.append(element)
-                                has_expensive_stickers = 1
+                                has_expensive_stickers += 1
                     
                     marketable = paczka_des_dict[element2]['marketable']
                     if(marketable==1):
@@ -616,8 +608,6 @@ for element1 in paczka_inv_dict:
                             break
                         objekty[market_hash_name] = [CSGO_item(item_id, market_hash_name, market_hash_name_short, market_hash_name_shorter, price, inspect_link, sticker_list, sticker_1, sticker_2, sticker_3, sticker_4, sticker_5, has_expensive_stickers, screenshot, screenshot_requestId, item_float, exterior, tradeable, tradeable_date)]         
 
-print(objekty.items())
-
 for name, lista_obj in objekty.items():
     for objekt in lista_obj:
         objekt.screenshot_post(objekt.inspect_link)
@@ -642,7 +632,7 @@ if(normal_guns == True):
     print(title_reddit)
     reddit_text = adv_main_reddit(3, 30000, many)
     selftext_reddit = buyout + reddit_text + ending + "\n \nThe prices are negotiable"#nie zmieniaj
-    advertisment_reddit(title_reddit,selftext_reddit)
+    # advertisment_reddit(title_reddit,selftext_reddit)
     time.sleep(5)
 
 if(stickered_guns > 0 or normal_guns == True):
