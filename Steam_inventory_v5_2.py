@@ -9,7 +9,7 @@ import mysql.connector
 
 #patch notes
 # - program sprawdza czy od steam został zwrócony response 200 
-# - dodanie formuly "naklejka x występuje y razy" na steam
+# - dodanie formuly "naklejka x występuje y razy" na steam reklama naklejek
 
 mydb = mysql.connector.connect(
   host="localhost",
