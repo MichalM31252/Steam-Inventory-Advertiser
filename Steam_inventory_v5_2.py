@@ -259,7 +259,6 @@ def adv_main_steam_stickers(stickers_all_exp,element):
 
         sticker_names = []
         pom_set = set()
-        first = True
         for pom in element:
             for element2 in stickers_all_exp:
                 if pom in element2:
@@ -270,16 +269,28 @@ def adv_main_steam_stickers(stickers_all_exp,element):
                         pom = pom.replace("20","")
                         pom = pom.replace(" | "," ")
                         pom = pom.replace(".com","")
-                        if ilosc > 1:
-                            pom = str(ilosc) + "x " + pom
-                        if first == False:
-                            sticker_names.append(", " + pom)
-                        if first == True:   
-                            sticker_names.append(pom)
-                            first = False
+                        pom = str(ilosc) + "x " + pom  
+                        sticker_names.append(pom)
 
-        sticker_names = ''.join(sticker_names) 
-        sticker_normal_text_dod = "[H] " + element[5] + " w/ " + sticker_names + "\n"
+        max = int(sticker_names[0][0])
+        for i in range(0,len(sticker_names)):
+            if int(sticker_names[i][0]) == 1:
+                sticker_names[i] = sticker_names[i][3:]
+            elif int(sticker_names[i][0]) >= max:
+                max = int(sticker_names[i][0])
+                sticker_names.insert(0, sticker_names.pop(i))
+
+        first = True
+        sticker_names2 = []
+        for element3 in sticker_names:
+            if first == False:
+                sticker_names2.append(", " + str(element3))
+            if first == True:
+                sticker_names2.append(str(element3))
+                first = False
+
+        sticker_names2 = ''.join(sticker_names2) 
+        sticker_normal_text_dod = "[H] " + element[5] + " w/ " + sticker_names2 + "\n"
 
     return sticker_normal_text_dod
 
@@ -615,7 +626,7 @@ for name, lista_obj in objekty.items():
 
 # delete_gone()
 
-check_expensive()
+# check_expensive()
 
 normal_guns, stickered_guns = update_and_find()
 
