@@ -10,6 +10,7 @@ import mysql.connector
 #patch notes
 # - program sprawdza czy od steam został zwrócony response 200 
 # - dodanie formuly "naklejka x występuje y razy" na steam reklama naklejek
+# - naklejki które występują najwięcej razy są ustawione na środku 
 
 mydb = mysql.connector.connect(
   host="localhost",
@@ -624,9 +625,9 @@ for name, lista_obj in objekty.items():
     for objekt in lista_obj:
         objekt.screenshot_post(objekt.inspect_link)
 
-# delete_gone()
+delete_gone()
 
-# check_expensive()
+check_expensive()
 
 normal_guns, stickered_guns = update_and_find()
 
@@ -644,7 +645,7 @@ if(normal_guns == True):
     print(title_reddit)
     reddit_text = adv_main_reddit(3, 30000, many)
     selftext_reddit = buyout + reddit_text + ending + "\n \nThe prices are negotiable"#nie zmieniaj
-    # advertisment_reddit(title_reddit,selftext_reddit)
+    advertisment_reddit(title_reddit,selftext_reddit)
     time.sleep(5)
 
 if(stickered_guns > 0 or normal_guns == True):
