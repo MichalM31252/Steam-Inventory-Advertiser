@@ -464,6 +464,7 @@ r = requests.get(url=url, params=params)
 
 if r.status_code != 200:
     print("Niestety Status Code nie jest równy 200")
+    SystemExit(0)
 
 paczka_json = r.json()
 
@@ -484,10 +485,6 @@ if not paczka_json["rgInventory"]:
 paczka_inv_dict = paczka_json["rgInventory"]
 
 paczka_des_dict = paczka_json["rgDescriptions"]
-
-paczka_inv_list = list(paczka_inv_dict)
-
-paczka_des_list = list(paczka_des_dict)
 
 if(success == "True"): # pokazuje czy poprawnie wykonano zapytanie
     print("Wykonano poprawne zapytanie")
@@ -546,14 +543,12 @@ for element1 in paczka_inv_dict:
                 mycursor.fetchall()
                 row_count = mycursor.rowcount ######
                 if(row_count == 1):
-                    print("continue")
                     continue
 
                 mycursor.execute("SELECT item_id, COUNT(*) FROM items_with_stickers WHERE item_id = %s GROUP BY item_id", (item_id,)) ######
                 mycursor.fetchall()
                 row_count = mycursor.rowcount ######
                 if(row_count == 1):
-                    print("continue")
                     continue
                 
                 if(market_hash_name not in black_list):
@@ -592,24 +587,11 @@ for element1 in paczka_inv_dict:
                     
                     marketable = paczka_des_dict[element2]['marketable']
                     if(marketable==1):
-                        time.sleep(3)
-                        url = "https://steamcommunity.com/market/priceoverview/"
-                        params = {
-                            'currency': 1,
-                            'appid': 730,
-                            'market_hash_name': market_hash_name
-                        } 
-                        s = requests.get(url=url, params=params)
-                        cena_json = s.json()
-                        if(cena_json['success'] == True):
-                            try:
-                                cena = cena_json["median_price"].replace("$","")
-                                price = round(float(cena),2)
-                            except:
-                                cena = cena_json["lowest_price"].replace("$","")
-                                price = round(float(cena),2)
-                            
-                        elif(cena_json['success'] == False):
+                        mycursor.execute("SELECT price FROM all_items WHERE name = %s",(market_hash_name,))
+                        myresult = mycursor.fetchall()
+                        if(myresult[0] is not None):
+                            price = myresult[0][0]
+                        elif(myresult[0] is None):
                             print("Nie udalo sie pobrac ceny")
                             pass
                             
@@ -631,9 +613,9 @@ check_expensive()
 
 normal_guns, stickered_guns = update_and_find()
 
-bo = "HellRaisers (Holo) | Katowice 2014 on AWP Redline MW Second Best Pos"
+bo = "Crown Foil on an AK-47 Redline FT Best Pos <0.17 Float Not Scratched"
 Want_normal = "Katowice 2014 Normal/Holo, Katowice 2015, Crown, Howling Dawn Stickers Applied On Guns "
-Want_reddit = Want_normal + "B/O " + bo #nie zmieniaj
+Want_reddit = Want_normal + "B/O " + bo 
 ending = "\nYou can add me if you want I don't bite :D \n \ntradelink: https://steamcommunity.com/tradeoffer/new/?partner=271370812&token=eHAwcnd9" #nie zmieniaj
 title_normal = "[W] "+ Want_normal + "\n \n"
 
