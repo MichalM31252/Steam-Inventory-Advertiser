@@ -4,20 +4,20 @@ import time
 
 session = requests.Session()
 
-url = "http://steamcommunity.com/profiles/76561198231636540/inventory/json/730/2"
 
-steamid = 76561198231636540
+idProfilu = "76561198231636540"
+
+url = f"http://steamcommunity.com/inventory/{idProfilu}/730/2?"
+
+print(url)
 
 params = {
     'l': 'english',
-    'key': '799A514B28CF4BCE9F53B4F0272BD8F9',
-    'steamid': steamid
+    'count': '5000'
 }    
 
 r = requests.get(url=url, params=params)
 
 paczka_json = r.json()
 
-print(json.dumps(paczka_json, indent=2))
-
-time.sleep(180)
+#print(json.dumps(paczka_json, indent=2))

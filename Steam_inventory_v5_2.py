@@ -27,7 +27,7 @@ def check_expensive():
     pom = 0
     mycursor.execute("SELECT items_with_stickers.has_expensive_stickers, stickers_applied.sticker_1, stickers_applied.sticker_2, stickers_applied.sticker_3, stickers_applied.sticker_4, stickers_applied.sticker_5, items_with_stickers.item_id FROM items_with_stickers INNER JOIN stickers_applied ON items_with_stickers.item_id = stickers_applied.item_id WHERE items_with_stickers.has_expensive_stickers = 0",) ############
     myresult = mycursor.fetchall() 
-    mycursor.execute("SELECT name from stickers",) ############
+    mycursor.execute("SELECT name from stickers",) 
     stickers_exp = mycursor.fetchall() 
     for element in myresult:
         for sticker in stickers_exp:
@@ -50,19 +50,25 @@ def check_many():
     return many
 
 def delete_gone():
-    mycursor.execute("SELECT `item_id` FROM items",)
-    myresult = mycursor.fetchall() 
-    for element in myresult:
+    myresult = _extracted_from_delete_gone_2(
+        "SELECT `item_id` FROM items", "DELETE FROM items WHERE item_id = %s"
+    )
+    myresult = _extracted_from_delete_gone_2(
+        "SELECT `item_id` FROM items_with_stickers",
+        "DELETE FROM items_with_stickers WHERE item_id = %s",
+    )
+
+
+# TODO Rename this here and in `delete_gone`
+def _extracted_from_delete_gone_2(arg0, arg1):
+    mycursor.execute(arg0)
+    result = mycursor.fetchall()
+    for element in result:
         if element not in id_list:
-            mycursor.execute("DELETE FROM items WHERE item_id = %s", element)
+            mycursor.execute(arg1, element)
             mydb.commit()
 
-    mycursor.execute("SELECT `item_id` FROM items_with_stickers",)
-    myresult = mycursor.fetchall() 
-    for element in myresult:
-        if element not in id_list:
-            mycursor.execute("DELETE FROM items_with_stickers WHERE item_id = %s", element)
-            mydb.commit()
+    return result
 
 def update_and_find():
     global normal_guns
@@ -74,10 +80,9 @@ def update_and_find():
     pom1 = 0
     pom2 = 0
     for element in myresult:
-        if(element[2] != None):
-            if(element[2] <= teraz):
-                mycursor.execute("UPDATE items SET `tradeable` = 1, `tradeable_date` = %s WHERE `item_id` = %s", (value,element[0],))
-                mydb.commit()
+        if element[2] != None and element[2] <= teraz:
+            mycursor.execute("UPDATE items SET `tradeable` = 1, `tradeable_date` = %s WHERE `item_id` = %s", (value,element[0],))
+            mydb.commit()
         if element[1] == 1 and element[3] >= 3:
             pom1 += 1
         elif element[3] >= 45:
@@ -87,12 +92,10 @@ def update_and_find():
 
     mycursor.execute("SELECT `item_id`,`tradeable`,`tradeable_date`, `price`, `has_expensive_stickers` FROM items_with_stickers",)
     myresult = mycursor.fetchall()
-    print(myresult)
     teraz = datetime.datetime.now().replace(microsecond=0)
     value = None
-    print(myresult)
     for element in myresult:
-        if(element[2] != None):
+        if (element[2] != None):
             if(element[2] <= teraz):
                 mycursor.execute("UPDATE items_with_stickers SET `tradeable` = 1, `tradeable_date` = %s WHERE `item_id` = %s", (value,element[0],))
                 mydb.commit()
@@ -101,7 +104,7 @@ def update_and_find():
                 pom2 += element[4] 
                 if pom2 >= 2:
                     stickered_guns = True
-            if element[1] == 1 and element[3] > 45:
+            if element[3] > 45:
                 normal_guns = True
             else:
                 pom1 += 1  
@@ -112,60 +115,38 @@ def update_and_find():
 
 def get_title_reddit(Want_reddit, limit, limit_title):
     title_reddit = ""
-    title_string = ""
-    pomx = 0
-    x = 0
-    y = 0
     pom = True
     mycursor.execute("SELECT market_hash_name_shorter, count(*) as name_count, price from items WHERE tradeable = 1 GROUP BY market_hash_name having name_count = 1 UNION ALL SELECT market_hash_name_shorter, count(*) as name_count, price from items_with_stickers WHERE tradeable = 1 AND has_expensive_stickers = 0 GROUP BY market_hash_name having name_count = 1 ORDER BY price DESC")
-    myresult = mycursor.fetchall() 
+    myresult = mycursor.fetchall()
     print(myresult)
     if myresult:
+        x = 0
+        y = 0
         for xyz in myresult:
-            print(xyz[0]) #market_hash_name_shorter
-            print(xyz[1]) #name_count
-            print(xyz[2]) #price
-            print("")
-
-            print("Limit: ",limit)
             if xyz[2] >= limit:
                 y += xyz[2]
                 x += 1
 
-        print()
-        print("limit: ",limit)
-        print("x: ",x)
-        print("y: ",y)
-        print()
-
         if x > 1:
-            Have = str(x) + " items worth around: " + str(y) + "$ "
+            Have = f"{str(x)} items worth around: {str(y)}$ "
         if x == 1:
-            Have = str(x) + " item worth around: " + str(y) + "$ "
+            Have = f"{str(x)} item worth around: {str(y)}$ "
 
+        title_string = ""
+        pomx = 0
         for xyz in myresult:
-            print(xyz[0]) #market_hash_name_shorter
-            print(xyz[1]) #name_count
-            print(xyz[2]) #price
-            print("")
-
-            print("Limit: ",limit)
             if xyz[2] >= limit:
                 pomx += 1
                 pom_text = ""
 
                 if pom == False:
                     if xyz[1] == 1:
-                        pom_text = ", " + str(xyz[0])
+                        pom_text = f", {str(xyz[0])}"
                     else:
-                        pom_text = ", " + str(xyz[1]) + "x " + str(xyz[0])
+                        pom_text = f", {str(xyz[1])}x {str(xyz[0])}"
                 if pom == True:
                     pom = False
-                    if xyz[1] == 1:
-                        pom_text = str(xyz[0])
-                    else:
-                        pom_text = str(xyz[1]) + "x " + str(xyz[0])
-                
+                    pom_text = str(xyz[0]) if xyz[1] == 1 else f"{str(xyz[1])}x {str(xyz[0])}"
                 if pomx < x:
                     pomoc = ["[H] ", Have, "(", title_string ,")", " [W] ", Want_reddit]
                 if pomx == x:
@@ -182,27 +163,27 @@ def get_title_reddit(Want_reddit, limit, limit_title):
                         title_string += pom_text
                     else:
                         break
-            
+
         if pomx < x:
-            title_reddit = "[H] " + Have + "(" + title_string + " etc." + ")" + " [W] " + Want_reddit
+            title_reddit = f"[H] {Have}({title_string} etc.) [W] {Want_reddit}"
         if pomx == x:
-            title_reddit = "[H] " + Have + "(" + title_string + ")" + " [W] " + Want_reddit
+            title_reddit = f"[H] {Have}({title_string}) [W] {Want_reddit}"
 
         return title_reddit, x, y
     else:
         print("Niestety nie ma żadnych przedmiotów które można zareklamować na reddicie")
 
+
 def adv_main_reddit(limit, subreddit_limit, many):
 
-    if(many == True):
-        reddit_text = "Amount | Market Name | Float | Screenshot | Inspectlink | \n :--|:--:|:--:|:--:|--: \n"
-    if(many == False):
+    if many == False:
         reddit_text = "Market Name | Float | Screenshot | Inspectlink | \n :--|:--:|:--:|:--:|--: \n"
-    
+
+    elif many == True:
+        reddit_text = "Amount | Market Name | Float | Screenshot | Inspectlink | \n :--|:--:|:--:|:--:|--: \n"
     global normal_guns
     mycursor.execute("SELECT market_hash_name_short, market_hash_name_shorter, inspect_link, item_float, screenshot, price, count(*) as name_count from items WHERE tradeable = 1 GROUP BY market_hash_name having name_count = 1 UNION ALL SELECT market_hash_name_short, market_hash_name_shorter, inspect_link, item_float, screenshot, price, count(*) as name_count from items_with_stickers WHERE tradeable = 1 AND has_expensive_stickers = 0 GROUP BY market_hash_name having name_count = 1 ORDER BY price DESC")
-    myresult = mycursor.fetchall() 
-    if myresult:
+    if myresult := mycursor.fetchall():
         for xyz in myresult:
             print(xyz[0]) #market_hash_name_short
             print(xyz[1]) #market_hash_name_shorter
@@ -216,13 +197,18 @@ def adv_main_reddit(limit, subreddit_limit, many):
             add_to_selftext = ""
             pomoc = [reddit_text, buyout, ending, str(xyz[5]), "x | ", xyz[0], " | ", str(xyz[3]), " | [screenshot](", xyz[4], ") | [inspectlink](", xyz[2], ") \n"]
             a = sum(len(i) for i in pomoc)
-            if a <= subreddit_limit:
-                if xyz[5] >= limit:
-                    if(xyz[6] != 1):
-                        add_to_selftext += str(xyz[5]) + "x | " + xyz[0] + " | " + str(xyz[3]) + " | [screenshot](" + xyz[4] + ") | [inspectlink](" + xyz[2] + ") \n"
-                    if(xyz[6] == 1):
-                        add_to_selftext += xyz[0] + " | " + str(xyz[3]) + " | [screenshot](" + xyz[4] + ") | [inspectlink](" + xyz[2] + ") \n"
-                    normal_guns = True
+            if a <= subreddit_limit and xyz[5] >= limit:
+                if (xyz[6] != 1):
+                    add_to_selftext += (
+                        f"{str(xyz[5])}x | {xyz[0]} | {str(xyz[3])} | [screenshot]({xyz[4]}) | [inspectlink]({xyz[2]}"
+                        + ") \n"
+                    )
+                if (xyz[6] == 1):
+                    add_to_selftext += (
+                        f"{xyz[0]} | {str(xyz[3])} | [screenshot]({xyz[4]}) | [inspectlink]({xyz[2]}"
+                        + ") \n"
+                    )
+                normal_guns = True
             if a > subreddit_limit:
                 limit += 0.1
                 adv_main_reddit(limit,subreddit_limit)
@@ -232,96 +218,76 @@ def adv_main_reddit(limit, subreddit_limit, many):
     return reddit_text
 
 def adv_main_steam_normal(element):
-    normal_dod = ""
     if element:
-        #print()
-        #print(element[0]) #market_hash_name_shorter
-        #print(element[1]) #name_count
-        #print(element[2]) #price
-        #print("")
-
-        if element[1] == 1:
-            normal_dod = "[H] " + element[0] + "\n"
-        else:
-            normal_dod = "[H] " + element[1] + "x " + element[0] + "\n"
-
-    return normal_dod
+        return (
+            f"[H] {element[0]}" + "\n"
+            if element[1] == 1
+            else f"[H] {element[1]}x {element[0]}" + "\n"
+        )
+    else:
+        return ""
 
 def adv_main_steam_stickers(stickers_all_exp,element):
     sticker_normal_text_dod = ""
     if element:
-        #print(element[0]) #sticker_1
-        #print(element[1]) #sticker_2
-        #print(element[2]) #sticker_3
-        #print(element[3]) #sticker_4
-        #print(element[4]) #sticker_5
-        #print(element[5]) #market_hash_name_shorter
-        #print("")
-
         sticker_names = []
         pom_set = set()
         for pom in element:
             for element2 in stickers_all_exp:
-                if pom in element2:
-                    if pom not in pom_set:
-                        pom_set.add(pom)
-                        ilosc = element.count(pom)
-                        pom = pom.replace("Katowice","Kato")
-                        pom = pom.replace("20","")
-                        pom = pom.replace(" | "," ")
-                        pom = pom.replace(".com","")
-                        pom = str(ilosc) + "x " + pom  
-                        sticker_names.append(pom)
+                if pom in element2 and pom not in pom_set:
+                    pom_set.add(pom)
+                    ilosc = element.count(pom)
+                    pom = pom.replace("Katowice","Kato")  #są maklejki które mają w nazwie katowice 2014/2015/2019
+                    pom = pom.replace("20","")
+                    pom = pom.replace(" | "," ")
+                    pom = pom.replace(".com","")
+                    pom = f"{str(ilosc)}x {pom}"
+                    sticker_names.append(pom)
 
-        max = int(sticker_names[0][0])
-        for i in range(0,len(sticker_names)):
+        maxi = int(sticker_names[0][0])
+        for i in range(len(sticker_names)):
             if int(sticker_names[i][0]) == 1:
                 sticker_names[i] = sticker_names[i][3:]
-            elif int(sticker_names[i][0]) >= max:
-                max = int(sticker_names[i][0])
+            elif int(sticker_names[i][0]) >= maxi:
+                maxi = int(sticker_names[i][0])
                 sticker_names.insert(0, sticker_names.pop(i))
 
         first = True
         sticker_names2 = []
         for element3 in sticker_names:
             if first == False:
-                sticker_names2.append(", " + str(element3))
+                sticker_names2.append(f", {str(element3)}")
             if first == True:
                 sticker_names2.append(str(element3))
                 first = False
 
-        sticker_names2 = ''.join(sticker_names2) 
-        sticker_normal_text_dod = "[H] " + element[5] + " w/ " + sticker_names2 + "\n"
+        sticker_names2 = ''.join(sticker_names2)
+        sticker_normal_text_dod = f"[H] {element[5]} w/ {sticker_names2}" + "\n"
 
     return sticker_normal_text_dod
 
 def adv_main_steam_all(myresult_normal,stickers_all_exp,myresult_stickers_applied,steam_group_limit,title_normal):
     
-    normal_text = ""
     sticker_normal_text = ""
     selftext_normal = ""
 
-    for element in myresult_normal:
-        normal_text += adv_main_steam_normal(element)
-    for element in myresult_stickers_applied:
-        sticker_normal_text += adv_main_steam_stickers(stickers_all_exp,element)
-
+    normal_text = "".join(
+        adv_main_steam_normal(element) for element in myresult_normal
+    )
     if len(normal_text) + len(sticker_normal_text) + len(title_normal) > steam_group_limit:
         if len(myresult_normal) > len(myresult_stickers_applied):
             myresult_normal = myresult_normal[:-1]
-            return adv_main_steam_all(myresult_normal,stickers_all_exp,myresult_stickers_applied,steam_group_limit,title_normal)
-        elif len(myresult_normal) <= len(myresult_stickers_applied):
-            myresult_stickers_applied = myresult_stickers_applied[:-1]
-            return adv_main_steam_all(myresult_normal,stickers_all_exp,myresult_stickers_applied,steam_group_limit,title_normal)
-
-    if len(normal_text) + len(sticker_normal_text) + len(title_normal) < steam_group_limit:
-        if(normal_text == "" and sticker_normal_text != ""):
-            selftext_normal = sticker_normal_text + ending
-        if(sticker_normal_text == "" and normal_text != ""):
-            selftext_normal = normal_text + ending
         else:
+            myresult_stickers_applied = myresult_stickers_applied[:-1]
+        return adv_main_steam_all(myresult_normal,stickers_all_exp,myresult_stickers_applied,steam_group_limit,title_normal)
+    if len(normal_text) + len(sticker_normal_text) + len(title_normal) < steam_group_limit:
+        if not normal_text and sticker_normal_text != "":
+            selftext_normal = sticker_normal_text + ending
+        if sticker_normal_text or not normal_text:
             selftext_normal = normal_text + "\n" + sticker_normal_text + ending      
 
+        else:
+            selftext_normal = normal_text + ending
     return selftext_normal
 
 def advertisment_reddit(title_reddit,selftext_reddit):
@@ -332,7 +298,7 @@ def advertisment_reddit(title_reddit,selftext_reddit):
                         password='C~HQ6<K84~zb7g(')
                         
     reddit.validate_on_submit = True
-    reddit.subreddit('GlobalOffensiveTrade').submit(title=title_reddit, selftext=selftext_reddit) #GlobalOffensiveTrade test
+    reddit.subreddit('test').submit(title=title_reddit, selftext=selftext_reddit) #GlobalOffensiveTrade test
     time.sleep(4)
     print("Reddit post has been created")
 
@@ -350,26 +316,27 @@ def advertisment_discussion_tab(title,selftext):
         description.send_keys(selftext)
         button = driver.find_element_by_class_name("btn_green_white_innerfade")
         button.click()
-    except:
+    except Exception:
         print("Wystąpił błąd z publikacją posta w sekcji dyskusji")
+        time.sleep(3)
 
 def advertisment_steam_groups(title,selftext,url):
     global nick
     try:
-        time.sleep(random.uniform(5.1, 8.0))
+        time.sleep(random.uniform(5.1, 10.0))
         driver.get(url)
         comments_other = driver.find_elements_by_tag_name("bdi")
         for element in comments_other:
             element = element.get_attribute('innerHTML')
             if(element == nick):
-                return 
+                return
         comment_area = driver.find_element_by_class_name("commentthread_textarea")
         comment_area.click()
         comment_area.send_keys(title,selftext)
         submit = driver.find_element_by_class_name("btn_green_white_innerfade")
         submit.click()
-    except:
-        print("Wystąpił błąd w linijce z url: "+url)
+    except Exception:
+        print(f"Wystąpił błąd w linijce z url: {url}")
 
 class CSGO_item():
     def __init__(self,item_id,market_hash_name,market_hash_name_short,market_hash_name_shorter,price,inspect_link,sticker_list,sticker_1,sticker_2,sticker_3,sticker_4,sticker_5,has_expensive_stickers,screenshot,screenshot_requestId,item_float,exterior,tradeable,tradeable_date):
@@ -397,52 +364,53 @@ class CSGO_item():
         url = "https://market-api.swap.gg/v1/screenshot"
         data = {
             "inspectLink": self.inspect_link.replace("%20", " ")
-        } 
+        }
         headers = {
             'Content-type': 'application/json',
             'Authorization': '82fd7fee-819a-49d4-af0d-dda2a499eac6' #bardzo możliwe, że to powinno być w auth header
         }
-        response_screenshot = session.post(url=url, json=data, headers=headers) # json=data
-        if(response_screenshot.json()['status'] == "OK"):
-            print(response_screenshot.json())
-            if(response_screenshot.json()['result']["state"] == "COMPLETED"):
-                self.screenshot = response_screenshot.json()['result']["imageLink"]
-                self.item_float = str(response_screenshot.json()['result']["itemInfo"]["floatvalue"])[:9] #usuń pobieranie tylko 8 pierwszych znakow
+        if response_screenshot := session.post(
+            url=url, json=data, headers=headers
+        ):
+            if (response_screenshot.json()['status'] == "OK"):
+                if (response_screenshot.json()['result']["state"] == "COMPLETED"):
+                    self.screenshot = response_screenshot.json()['result']["imageLink"]
+                    self.item_float = str(response_screenshot.json()['result']["itemInfo"]["floatvalue"])[:9] #usuń pobieranie tylko 8 pierwszych znakow
 
-                stickers = response_screenshot.json()['result']["itemInfo"]["stickers"]
-                if stickers:
-                    if(len(stickers) >= 1):
-                        objekt.sticker_1 = response_screenshot.json()['result']["itemInfo"]["stickers"][0]["name"]
-                        if(len(stickers) >= 2):
-                            objekt.sticker_2 = response_screenshot.json()['result']["itemInfo"]["stickers"][1]["name"]
-                            if(len(stickers) >= 3):
-                                objekt.sticker_3 = response_screenshot.json()['result']["itemInfo"]["stickers"][2]["name"]
-                                if(len(stickers) >= 4):
-                                    objekt.sticker_4 = response_screenshot.json()['result']["itemInfo"]["stickers"][3]["name"]
-                                    if(len(stickers) >= 5):
-                                        objekt.sticker_5 = response_screenshot.json()['result']["itemInfo"]["stickers"][4]["name"]
+                    if stickers := response_screenshot.json()['result'][
+                        "itemInfo"
+                    ]["stickers"]:
+                        if(len(stickers) >= 1):
+                            objekt.sticker_1 = response_screenshot.json()['result']["itemInfo"]["stickers"][0]["name"]
+                            if(len(stickers) >= 2):
+                                objekt.sticker_2 = response_screenshot.json()['result']["itemInfo"]["stickers"][1]["name"]
+                                if(len(stickers) >= 3):
+                                    objekt.sticker_3 = response_screenshot.json()['result']["itemInfo"]["stickers"][2]["name"]
+                                    if(len(stickers) >= 4):
+                                        objekt.sticker_4 = response_screenshot.json()['result']["itemInfo"]["stickers"][3]["name"]
+                                        if(len(stickers) >= 5):
+                                            objekt.sticker_5 = response_screenshot.json()['result']["itemInfo"]["stickers"][4]["name"]
 
-                    mycursor.execute("INSERT INTO items_with_stickers (item_id, market_hash_name, market_hash_name_short, market_hash_name_shorter, price, inspect_link, has_expensive_stickers, exterior, item_float, screenshot, tradeable, tradeable_date) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)", (objekt.item_id, objekt.market_hash_name, objekt.market_hash_name_short, objekt.market_hash_name_shorter, objekt.price, objekt.inspect_link, objekt.has_expensive_stickers, objekt.exterior, objekt.item_float, objekt.screenshot, objekt.tradeable, objekt.tradeable_date))
-                    mydb.commit() 
+                        mycursor.execute("INSERT INTO items_with_stickers (item_id, market_hash_name, market_hash_name_short, market_hash_name_shorter, price, inspect_link, has_expensive_stickers, exterior, item_float, screenshot, tradeable, tradeable_date) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)", (objekt.item_id, objekt.market_hash_name, objekt.market_hash_name_short, objekt.market_hash_name_shorter, objekt.price, objekt.inspect_link, objekt.has_expensive_stickers, objekt.exterior, objekt.item_float, objekt.screenshot, objekt.tradeable, objekt.tradeable_date))
+                        mydb.commit() 
 
-                    mycursor.execute("INSERT INTO stickers_applied (item_id, sticker_1, sticker_2, sticker_3, sticker_4, sticker_5) VALUES (%s, %s, %s, %s, %s, %s)", (objekt.item_id, objekt.sticker_1, objekt.sticker_2, objekt.sticker_3, objekt.sticker_4, objekt.sticker_5))
+                        mycursor.execute("INSERT INTO stickers_applied (item_id, sticker_1, sticker_2, sticker_3, sticker_4, sticker_5) VALUES (%s, %s, %s, %s, %s, %s)", (objekt.item_id, objekt.sticker_1, objekt.sticker_2, objekt.sticker_3, objekt.sticker_4, objekt.sticker_5))
+                    else:
+                        mycursor.execute("INSERT INTO items (item_id, market_hash_name, market_hash_name_short, market_hash_name_shorter, price, inspect_link, exterior, item_float, screenshot, tradeable, tradeable_date) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)", (objekt.item_id, objekt.market_hash_name, objekt.market_hash_name_short, objekt.market_hash_name_shorter, objekt.price, objekt.inspect_link, objekt.exterior, objekt.item_float, objekt.screenshot, objekt.tradeable, objekt.tradeable_date))
                     mydb.commit()
 
-                else:
-                    mycursor.execute("INSERT INTO items (item_id, market_hash_name, market_hash_name_short, market_hash_name_shorter, price, inspect_link, exterior, item_float, screenshot, tradeable, tradeable_date) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)", (objekt.item_id, objekt.market_hash_name, objekt.market_hash_name_short, objekt.market_hash_name_shorter, objekt.price, objekt.inspect_link, objekt.exterior, objekt.item_float, objekt.screenshot, objekt.tradeable, objekt.tradeable_date))
-                    mydb.commit() 
-
-            elif(response_screenshot.json()['result']["state"] == "IN_QUEUE"):
-                print("IN_QUEUE \n")
-                time.sleep(150)
-                self.screenshot_post(inspect_link)
-            elif(response_screenshot.json()['result']["state"] == "FAILED"):
-                print("FAILED \n")              
-            elif(response_screenshot.json()['result']["state"] == "ERROR"):
-                print("error")
-                time.sleep(300)  #program na discordzie ktory mnie pinguje## #############################################################
-                self.screenshot_post(inspect_link)
-            time.sleep(3)
+                elif(response_screenshot.json()['result']["state"] == "IN_QUEUE"):
+                    print("IN_QUEUE \n")
+                    print(inspect_link)
+                    time.sleep(150)
+                    self.screenshot_post(inspect_link)
+                elif(response_screenshot.json()['result']["state"] == "FAILED"):
+                    print("FAILED \n")
+                elif(response_screenshot.json()['result']["state"] == "ERROR"):
+                    print("error")
+                    time.sleep(300)  #program na discordzie ktory mnie pinguje## #############################################################
+                    self.screenshot_post(inspect_link)
+                time.sleep(3)
 val = []
 black_list = []
 title_list = []
@@ -456,26 +424,25 @@ steamid = 76561198231636540
 
 params = {
     'l': 'english',
-    'key': '492EE6A0BD7968AFE46FEC5CCC84666D',
+    'key': '4E7A197565233C8EC57F66F46D479A6C',
     'steamid': steamid
 }    
 
-r = requests.get(url=url, params=params)
+r = requests.get(url=url)
 
-if r.status_code != 200:
-    print("Niestety Status Code nie jest równy 200")
-    SystemExit(0)
+print(r.request.url)
+print(r.status_code)
 
 paczka_json = r.json()
-
+print()
 try:
     success = str(paczka_json["success"])
 except TypeError:
-    print("Występują problemy z api steama. Spróbuj ponownie poźniej")
+    print("Występują problemy z api steama. Spróbuj ponownie poźniej 1 ")
     raise SystemExit(0)
 
 if paczka_json["success"] == False:
-    print("Występują problemy z api steama. Spróbuj ponownie poźniej")
+    print("Występują problemy z api steama. Spróbuj ponownie poźniej 2")
     raise SystemExit(0)
 
 if not paczka_json["rgInventory"]:
@@ -572,10 +539,14 @@ for element1 in paczka_inv_dict:
                     if('cache_expiration' not in paczka_des_dict[element2]):
                         tradeable = paczka_des_dict[element2]['tradable']  
                         tradeable_date = ""             
-                    
+
                     descriptions_length = len(paczka_des_dict[element2]['descriptions'])
                     sticker_response = paczka_des_dict[element2]['descriptions'][descriptions_length-1]['value'] #to jest string napewno
-                    exterior = paczka_des_dict[element2]['tags'][5]['name']
+
+                    if (item_type == "Gloves"):
+                        exterior = paczka_des_dict[element2]['tags'][3]['name']
+                    else:
+                        exterior = paczka_des_dict[element2]['tags'][5]['name']  
 
                     mycursor.execute("SELECT name FROM stickers",)
                     myresult = mycursor.fetchall() 
@@ -587,7 +558,7 @@ for element1 in paczka_inv_dict:
                     
                     marketable = paczka_des_dict[element2]['marketable']
                     if(marketable==1):
-                        mycursor.execute("SELECT price FROM all_items WHERE name = %s",(market_hash_name,))
+                        mycursor.execute("SELECT price FROM all_items WHERE market_hash_name = %s",(market_hash_name,))
                         myresult = mycursor.fetchall()
                         if(myresult[0] is not None):
                             price = myresult[0][0]
@@ -613,14 +584,14 @@ check_expensive()
 
 normal_guns, stickered_guns = update_and_find()
 
-bo = "Crown Foil on an AK-47 Redline FT Best Pos <0.17 Float Not Scratched"
+bo = "LGB eSports (Holo) | Katowice 2014 on an AWP Redline MW 0.13> Best Position"
 Want_normal = "Katowice 2014 Normal/Holo, Katowice 2015, Crown, Howling Dawn Stickers Applied On Guns "
 Want_reddit = Want_normal + "B/O " + bo 
-ending = "\nYou can add me if you want I don't bite :D \n \ntradelink: https://steamcommunity.com/tradeoffer/new/?partner=271370812&token=eHAwcnd9" #nie zmieniaj
+ending = "\nYou can add me if you want I don't bite :D \n \nTradelink: https://steamcommunity.com/tradeoffer/new/?partner=271370812&token=hSE4IWo2" #nie zmieniaj
 title_normal = "[W] "+ Want_normal + "\n \n"
 
 if(normal_guns == True):
-    buyout = "\n \n B/O " + bo + "\n \n" #dodać program
+    buyout = "\n \n B/O " + bo + "\n \n" 
     selftext_reddit = ""
     many = check_many()
     title_reddit, x, y = get_title_reddit(Want_reddit, 3, 300)
@@ -633,80 +604,82 @@ if(normal_guns == True):
 if(stickered_guns > 0 or normal_guns == True):
     options = Options()
     options.add_argument("--disable-extensions")
-    options.add_experimental_option("excludeSwitches", ['enable-automation'])
-    options.add_argument("--start-maximized")
+    options.add_argument("window-size=1400,600")
+    options.add_experimental_option('excludeSwitches', ['enable-logging'])
+    options.add_experimental_option("excludeSwitches", ["enable-automation"])
+    options.add_experimental_option('useAutomationExtension', False)
+    options.add_argument("--disable-plugins-discovery")
+    options.add_argument("--disable-blink-features=AutomationControlled")
+    options.add_argument("--disable-blink-features")
     options.add_argument(r"user-data-dir=C:\Users\Michal\AppData\Local\Google\Chrome\User Data\Profile 1")
+
     driver = webdriver.Chrome(executable_path=r'C:\Users\Michal\Desktop\projekty\chromedriver.exe', options = options)
 
-    mycursor.execute("SELECT market_hash_name_shorter, count(market_hash_name) as name_count, price from items WHERE tradeable = 1 AND price >= 3 GROUP BY market_hash_name having name_count = 1 UNION ALL SELECT market_hash_name_shorter, count(*) as name_count, price from items_with_stickers WHERE tradeable = 1 AND has_expensive_stickers = 0 AND price >= 3 GROUP BY market_hash_name having name_count = 1 ORDER BY price DESC",)
-    myresult_normal = mycursor.fetchall() 
-    mycursor.execute("SELECT name FROM stickers",)
-    stickers_all_exp = mycursor.fetchall() 
-    mycursor.execute("SELECT stickers_applied.sticker_1, stickers_applied.sticker_2, stickers_applied.sticker_3, stickers_applied.sticker_4, stickers_applied.sticker_5, items_with_stickers.market_hash_name_shorter FROM stickers_applied JOIN items_with_stickers ON (stickers_applied.item_id = items_with_stickers.item_id AND items_with_stickers.has_expensive_stickers > 0 AND items_with_stickers.tradeable = 1) ORDER BY items_with_stickers.has_expensive_stickers DESC",)
-    myresult_stickers_applied = mycursor.fetchall() 
+#     mycursor.execute("SELECT market_hash_name_shorter, count(market_hash_name) as name_count, price from items WHERE tradeable = 1 AND price >= 3 GROUP BY market_hash_name having name_count = 1 UNION ALL SELECT market_hash_name_shorter, count(*) as name_count, price from items_with_stickers WHERE tradeable = 1 AND has_expensive_stickers = 0 AND price >= 3 GROUP BY market_hash_name having name_count = 1 ORDER BY price DESC",)
+#     myresult_normal = mycursor.fetchall() 
+#     mycursor.execute("SELECT name FROM stickers",)
+#     stickers_all_exp = mycursor.fetchall() 
+#     mycursor.execute("SELECT stickers_applied.sticker_1, stickers_applied.sticker_2, stickers_applied.sticker_3, stickers_applied.sticker_4, stickers_applied.sticker_5, items_with_stickers.market_hash_name_shorter FROM stickers_applied JOIN items_with_stickers ON (stickers_applied.item_id = items_with_stickers.item_id AND items_with_stickers.has_expensive_stickers > 0 AND items_with_stickers.tradeable = 1) ORDER BY items_with_stickers.has_expensive_stickers DESC",)
+#     myresult_stickers_applied = mycursor.fetchall() 
 
-    selftext_normal = adv_main_steam_all(myresult_normal,stickers_all_exp,myresult_stickers_applied,steam_group_limit,title_normal)
+#     selftext_normal = adv_main_steam_all(myresult_normal,stickers_all_exp,myresult_stickers_applied,steam_group_limit,title_normal)
 
-    advertisment_discussion_tab(title_normal,selftext_normal)
-    time.sleep(5)
+    # advertisment_discussion_tab(title_normal,selftext_normal)
+    # time.sleep(5)
 
-    advertisment_steam_groups(title_normal,selftext_normal,"https://steamcommunity.com/groups/tradecenter2016")
-    advertisment_steam_groups(title_normal,selftext_normal,"https://steamcommunity.com/groups/CSGOTrader")
-    advertisment_steam_groups(title_normal,selftext_normal,"https://steamcommunity.com/groups/csgolounge")
-    advertisment_steam_groups(title_normal,selftext_normal,"https://steamcommunity.com/groups/katowicestickerclub")
-    advertisment_steam_groups(title_normal,selftext_normal,"https://steamcommunity.com/groups/csmoneytrade")
-    advertisment_steam_groups(title_normal,selftext_normal,"https://steamcommunity.com/groups/katowice2014stickercollectors")
-    advertisment_steam_groups(title_normal,selftext_normal,"https://steamcommunity.com/groups/ibuypower")
-    advertisment_steam_groups(title_normal,selftext_normal,"https://steamcommunity.com/groups/Original_Traders_Group")
-    advertisment_steam_groups(title_normal,selftext_normal,"https://steamcommunity.com/groups/SGTTB")
-    advertisment_steam_groups(title_normal,selftext_normal,"https://steamcommunity.com/groups/CykaKatowice")
-    advertisment_steam_groups(title_normal,selftext_normal,"https://steamcommunity.com/groups/TeamKato14")
-    advertisment_steam_groups(title_normal,selftext_normal,"https://steamcommunity.com/groups/Katowice2014")
-    advertisment_steam_groups(title_normal,selftext_normal,"https://steamcommunity.com/groups/CsDealsOfficial")
-    advertisment_steam_groups(title_normal,selftext_normal,"https://steamcommunity.com/groups/freeetrade")
-    advertisment_steam_groups(title_normal,selftext_normal,"https://steamcommunity.com/groups/CSGOTRADEme")
-    advertisment_steam_groups(title_normal,selftext_normal,"https://steamcommunity.com/groups/BibanatorCommunity")
-    advertisment_steam_groups(title_normal,selftext_normal,"https://steamcommunity.com/groups/1BUYPOWER")
-    advertisment_steam_groups(title_normal,selftext_normal,"https://steamcommunity.com/groups/polandgotrade")
-    advertisment_steam_groups(title_normal,selftext_normal,"https://steamcommunity.com/groups/Trading-Lounge")
-    advertisment_steam_groups(title_normal,selftext_normal,"https://steamcommunity.com/groups/gergelyszabotrading")
-    advertisment_steam_groups(title_normal,selftext_normal,"https://steamcommunity.com/groups/WorldTradersGroup")
-    advertisment_steam_groups(title_normal,selftext_normal,"https://steamcommunity.com/groups/theglobalparadise")
-    advertisment_steam_groups(title_normal,selftext_normal,"https://steamcommunity.com/groups/steamanalyst")
-    advertisment_steam_groups(title_normal,selftext_normal,"https://steamcommunity.com/groups/iTraders")
-    advertisment_steam_groups(title_normal,selftext_normal,"https://steamcommunity.com/groups/TradingRevolution")
-    advertisment_steam_groups(title_normal,selftext_normal,"https://steamcommunity.com/groups/CSGOFGT")
-    advertisment_steam_groups(title_normal,selftext_normal,"https://steamcommunity.com/groups/SkinProfit")
-    advertisment_steam_groups(title_normal,selftext_normal,"https://steamcommunity.com/groups/OpiumPulsesTrading")
-    advertisment_steam_groups(title_normal,selftext_normal,"https://steamcommunity.com/groups/csgointernationaltradings")
-    advertisment_steam_groups(title_normal,selftext_normal,"https://steamcommunity.com/groups/csgotradeherre")
-    advertisment_steam_groups(title_normal,selftext_normal,"https://steamcommunity.com/groups/CSGOSellCom")
-    advertisment_steam_groups(title_normal,selftext_normal,"https://steamcommunity.com/groups/LitTrading")
-    advertisment_steam_groups(title_normal,selftext_normal,"https://steamcommunity.com/groups/CSGOSkinTradingAndMore")
-    advertisment_steam_groups(title_normal,selftext_normal,"https://steamcommunity.com/groups/casedropeu")
-    advertisment_steam_groups(title_normal,selftext_normal,"https://steamcommunity.com/groups/tradesmart")
-    advertisment_steam_groups(title_normal,selftext_normal,"https://steamcommunity.com/groups/tdm_jesus")
-    advertisment_steam_groups(title_normal,selftext_normal,"https://steamcommunity.com/groups/realCSGO64")
-    advertisment_steam_groups(title_normal,selftext_normal,"https://steamcommunity.com/groups/SkinTrade")
-    advertisment_steam_groups(title_normal,selftext_normal,"https://steamcommunity.com/groups/globaltradeandplay")
-    advertisment_steam_groups(title_normal,selftext_normal,"https://steamcommunity.com/groups/Trade-City")
-    advertisment_steam_groups(title_normal,selftext_normal,"https://steamcommunity.com/groups/LitNetwork")
-    advertisment_steam_groups(title_normal,selftext_normal,"https://steamcommunity.com/groups/csgotradesss")
-    advertisment_steam_groups(title_normal,selftext_normal,"https://steamcommunity.com/groups/community_market")
-    advertisment_steam_groups(title_normal,selftext_normal,"https://steamcommunity.com/groups/csgotradebot")
-    advertisment_steam_groups(title_normal,selftext_normal,"https://steamcommunity.com/groups/rewardsgg")
-    advertisment_steam_groups(title_normal,selftext_normal,"https://steamcommunity.com/groups/titan")
-    advertisment_steam_groups(title_normal,selftext_normal,"https://steamcommunity.com/groups/CSGOTradesGroup")
-    advertisment_steam_groups(title_normal,selftext_normal,"https://steamcommunity.com/groups/csgotradeskinscaseWorld")
-    advertisment_steam_groups(title_normal,selftext_normal,"https://steamcommunity.com/groups/CSGOTradeHub")
-    advertisment_steam_groups(title_normal,selftext_normal,"https://steamcommunity.com/groups/FACEITcom")
-    advertisment_steam_groups(title_normal,selftext_normal,"https://steamcommunity.com/groups/thetradingmasters")
-    advertisment_steam_groups(title_normal,selftext_normal,"https://steamcommunity.com/groups/TheTradeCenter")
-    advertisment_steam_groups(title_normal,selftext_normal,"https://steamcommunity.com/groups/otrade")
-    advertisment_steam_groups(title_normal,selftext_normal,"https://steamcommunity.com/groups/CABUYSELLOfficial")
-    advertisment_steam_groups(title_normal,selftext_normal,"https://steamcommunity.com/groups/csgo_traders")
-    advertisment_steam_groups(title_normal,selftext_normal,"https://steamcommunity.com/groups/csgosum")
-    advertisment_steam_groups(title_normal,selftext_normal,"https://steamcommunity.com/groups/wymieniamy-skiny")
-    advertisment_steam_groups(title_normal,selftext_normal,"https://steamcommunity.com/groups/CROWNBOYS")
+    # advertisment_steam_groups(title_normal,selftext_normal,"https://steamcommunity.com/groups/tradecenter2016")
+    # advertisment_steam_groups(title_normal,selftext_normal,"https://steamcommunity.com/groups/CSGOTrader")
+    # advertisment_steam_groups(title_normal,selftext_normal,"https://steamcommunity.com/groups/csgolounge")
+    # advertisment_steam_groups(title_normal,selftext_normal,"https://steamcommunity.com/groups/katowicestickerclub")
+    # advertisment_steam_groups(title_normal,selftext_normal,"https://steamcommunity.com/groups/csmoneytrade")
+    # advertisment_steam_groups(title_normal,selftext_normal,"https://steamcommunity.com/groups/katowice2014stickercollectors")
+    # advertisment_steam_groups(title_normal,selftext_normal,"https://steamcommunity.com/groups/ibuypower")
+    # advertisment_steam_groups(title_normal,selftext_normal,"https://steamcommunity.com/groups/Original_Traders_Group")
+    # advertisment_steam_groups(title_normal,selftext_normal,"https://steamcommunity.com/groups/SGTTB")
+    # advertisment_steam_groups(title_normal,selftext_normal,"https://steamcommunity.com/groups/CykaKatowice")
+    # advertisment_steam_groups(title_normal,selftext_normal,"https://steamcommunity.com/groups/TeamKato14")
+    # advertisment_steam_groups(title_normal,selftext_normal,"https://steamcommunity.com/groups/Katowice2014")
+    # advertisment_steam_groups(title_normal,selftext_normal,"https://steamcommunity.com/groups/CsDealsOfficial")
+    # advertisment_steam_groups(title_normal,selftext_normal,"https://steamcommunity.com/groups/freeetrade")
+    # advertisment_steam_groups(title_normal,selftext_normal,"https://steamcommunity.com/groups/CSGOTRADEme")
+    # advertisment_steam_groups(title_normal,selftext_normal,"https://steamcommunity.com/groups/BibanatorCommunity")
+    # advertisment_steam_groups(title_normal,selftext_normal,"https://steamcommunity.com/groups/1BUYPOWER")
+    # advertisment_steam_groups(title_normal,selftext_normal,"https://steamcommunity.com/groups/polandgotrade")
+    # advertisment_steam_groups(title_normal,selftext_normal,"https://steamcommunity.com/groups/Trading-Lounge")
+    # advertisment_steam_groups(title_normal,selftext_normal,"https://steamcommunity.com/groups/gergelyszabotrading")
+    # advertisment_steam_groups(title_normal,selftext_normal,"https://steamcommunity.com/groups/WorldTradersGroup")
+    # advertisment_steam_groups(title_normal,selftext_normal,"https://steamcommunity.com/groups/theglobalparadise")
+    # advertisment_steam_groups(title_normal,selftext_normal,"https://steamcommunity.com/groups/steamanalyst")
+    # advertisment_steam_groups(title_normal,selftext_normal,"https://steamcommunity.com/groups/iTraders")
+    # advertisment_steam_groups(title_normal,selftext_normal,"https://steamcommunity.com/groups/TradingRevolution")
+    # advertisment_steam_groups(title_normal,selftext_normal,"https://steamcommunity.com/groups/CSGOFGT")
+    # advertisment_steam_groups(title_normal,selftext_normal,"https://steamcommunity.com/groups/SkinProfit")
+    # advertisment_steam_groups(title_normal,selftext_normal,"https://steamcommunity.com/groups/OpiumPulsesTrading")
+    # advertisment_steam_groups(title_normal,selftext_normal,"https://steamcommunity.com/groups/csgointernationaltradings")
+    # advertisment_steam_groups(title_normal,selftext_normal,"https://steamcommunity.com/groups/csgotradeherre")
+    # advertisment_steam_groups(title_normal,selftext_normal,"https://steamcommunity.com/groups/LitTrading")
+    # advertisment_steam_groups(title_normal,selftext_normal,"https://steamcommunity.com/groups/CSGOSkinTradingAndMore")
+    # advertisment_steam_groups(title_normal,selftext_normal,"https://steamcommunity.com/groups/tradesmart")
+    # advertisment_steam_groups(title_normal,selftext_normal,"https://steamcommunity.com/groups/realCSGO64")
+    # advertisment_steam_groups(title_normal,selftext_normal,"https://steamcommunity.com/groups/SkinTrade")
+    # advertisment_steam_groups(title_normal,selftext_normal,"https://steamcommunity.com/groups/globaltradeandplay")
+    # advertisment_steam_groups(title_normal,selftext_normal,"https://steamcommunity.com/groups/Trade-City")
+    # advertisment_steam_groups(title_normal,selftext_normal,"https://steamcommunity.com/groups/LitNetwork")
+    # advertisment_steam_groups(title_normal,selftext_normal,"https://steamcommunity.com/groups/csgotradesss")
+    # advertisment_steam_groups(title_normal,selftext_normal,"https://steamcommunity.com/groups/community_market")
+    # advertisment_steam_groups(title_normal,selftext_normal,"https://steamcommunity.com/groups/csgotradebot")
+    # advertisment_steam_groups(title_normal,selftext_normal,"https://steamcommunity.com/groups/rewardsgg")
+    # advertisment_steam_groups(title_normal,selftext_normal,"https://steamcommunity.com/groups/titan")
+    # advertisment_steam_groups(title_normal,selftext_normal,"https://steamcommunity.com/groups/CSGOTradesGroup")
+    # advertisment_steam_groups(title_normal,selftext_normal,"https://steamcommunity.com/groups/csgotradeskinscaseWorld")
+    # advertisment_steam_groups(title_normal,selftext_normal,"https://steamcommunity.com/groups/CSGOTradeHub")
+    # advertisment_steam_groups(title_normal,selftext_normal,"https://steamcommunity.com/groups/FACEITcom")
+    # advertisment_steam_groups(title_normal,selftext_normal,"https://steamcommunity.com/groups/thetradingmasters")
+    # advertisment_steam_groups(title_normal,selftext_normal,"https://steamcommunity.com/groups/TheTradeCenter")
+    # advertisment_steam_groups(title_normal,selftext_normal,"https://steamcommunity.com/groups/otrade")
+    # advertisment_steam_groups(title_normal,selftext_normal,"https://steamcommunity.com/groups/csgo_traders")
+    # advertisment_steam_groups(title_normal,selftext_normal,"https://steamcommunity.com/groups/csgosum")
+    # advertisment_steam_groups(title_normal,selftext_normal,"https://steamcommunity.com/groups/wymieniamy-skiny")
+    # advertisment_steam_groups(title_normal,selftext_normal,"https://steamcommunity.com/groups/CROWNBOYS")
 
     driver.quit()
