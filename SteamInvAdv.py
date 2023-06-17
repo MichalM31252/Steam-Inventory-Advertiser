@@ -5,8 +5,10 @@ import praw
 import random
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
-import mysql.connector
 from SteamApiCalls import getInvInfo
+from Classes import DBConnection, CsItem
+
+Dbcon = DBConnection()
 
 session = requests.Session()
 
@@ -19,6 +21,8 @@ try:
         quit()
 except Exception:
     print("Zbyt wiele zapytań, spróbuj ponownie później!")
+    print(InventoryData)
+    quit()
 
 if(InventoryData["total_inventory_count"] == 0):
     print("W ekwipunktu nie znaleziono żacnych przedmiotów!")
@@ -29,32 +33,27 @@ inventoryPacketDescriptions = InventoryData["descriptions"]
 
 #Niestety kolejność przedmiotów w assets i descriptions nie musi być ze sobą powiązana dlatego algorytm ma złożoność kwadratową
 
-numberOfAssets = len(inventoryPacketAssets)
+correctItemTypes = ["Rifle", "Pistol", "SMG", "Sniper Rifle", "Gloves", "Knife", "Shotgun", "Machinegun"]
+for asset in inventoryPacketAssets:
+    for description in inventoryPacketDescriptions:
+        if (asset['classid'] == description['classid'] and asset['instanceid'] == description['instanceid']):
+            itemType = description["tags"][0]["localized_tag_name"]
+            if itemType in correctItemTypes: #sprawdzenie czy przedmiot należy do przedmiotów które można zareklamować
 
-i, j = 0, 0
-#zastosowano while ponieważ lista elementów zmienia się dynamicznie a range w pętli for jest wyznaczany tylko raz
-while i < len(inventoryPacketAssets):
-    while j < len(inventoryPacketDescriptions):
-        itemType = inventoryPacketDescriptions[j]["tags"][0]["localized_tag_name"]
-# sourcery skip: merge-nested-ifs
-        if (inventoryPacketAssets[i]['classid'] == inventoryPacketDescriptions[j]['classid'] and inventoryPacketAssets[i]['instanceid'] == inventoryPacketDescriptions[j]['instanceid']):
-            if itemType in [
-                "Rifle",
-                "Pistol",
-                "SMG",
-                "Sniper Rifle",
-                "Gloves",
-                "Knife",
-                "Shotgun",
-                "Machinegun",
-            ]:
-                print(itemType)
-            else:
-                inventoryPacketDescriptions.remove(inventoryPacketDescriptions[j])
-        j += 1
-    i += 1
+                if Dbcon.checkForExistingRecords(asset['assetid']):
+                    print("Continue")
+                    continue
 
-print(inventoryPacketDescriptions)
+                CsWeapon = CsItem(asset['assetid'], description['market_hash_name'], description['actions'][0]['link'])
+                CsWeapon.getMarketHashNameShorter()
+
+                print(CsWeapon.inspectlink)
+                
+            
+                
+
+
+                
 
             
     
