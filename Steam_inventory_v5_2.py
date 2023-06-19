@@ -529,7 +529,7 @@ for element1 in paczka_inv_dict:
                     inspectlink_alfa = paczka_des_dict[element2]['actions'][0]['link']
                     inspectlink_beta = inspectlink_alfa.replace('%owner_steamid%',str(steamid))
                     inspectlink_gamma = inspectlink_beta.replace(" ", "%20")
-                    inspect_link = inspectlink_gamma.replace('%assetid%',str(element1))
+                    inspect_link = inspectlink_gamma,
 
                     tradeable = paczka_des_dict[element2]['tradable'] 
                     if('cache_expiration' in paczka_des_dict[element2]):

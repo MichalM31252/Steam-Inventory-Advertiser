@@ -41,13 +41,20 @@ for asset in inventoryPacketAssets:
             if itemType in correctItemTypes: #sprawdzenie czy przedmiot należy do przedmiotów które można zareklamować
 
                 if Dbcon.checkForExistingRecords(asset['assetid']):
-                    print("Continue")
+                    print("CongetAppliedStickerstinue")
                     continue
 
-                CsWeapon = CsItem(asset['assetid'], description['market_hash_name'], description['actions'][0]['link'])
+                CsWeapon = CsItem(asset['assetid'], description['market_hash_name'])
+                #tworzy specjalny wariant nazwy ułatwiający reklame na różnych platformach społecznościowych
                 CsWeapon.getMarketHashNameShorter()
+                #tworzy link potrzebny do obejrzenia broni
+                CsWeapon.getInspectLink(description)
+                #sprawdza czy przedmiot jest gotowy na wymiane
+                CsWeapon.getTradebilityStatus(description)
+                #wykrywa wszystkie naklejki naklejone na broń i dodaje je do listy
+                CsWeapon.getAppliedStickers(description)
 
-                print(CsWeapon.inspectlink)
+
                 
             
                 
