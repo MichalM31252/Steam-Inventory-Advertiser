@@ -54,11 +54,9 @@ class CsItem():
     def getAppliedStickers(self, description):
         stickerResponse = description['descriptions'][-1]['value']
         if "sticker" in stickerResponse:
-            regex = '/<img width=64 height=48 src="(.*?)">/g'
-            self.stickers = re.findall(regex, stickerResponse)
-            # print("OK")
-            # print(stickerResponse)
-            # print(self.stickers)
+            #wykorzystanie regexa do odczytania informacji zawartych w tagach html
+            cleaner = re.compile('<.*?>') 
+            self.stickers = re.sub(cleaner, '', stickerResponse)[8:].split(", ")
 
 #
 

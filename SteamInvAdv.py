@@ -54,6 +54,8 @@ for asset in inventoryPacketAssets:
                 #wykrywa wszystkie naklejki naklejone na broń i dodaje je do listy
                 CsWeapon.getAppliedStickers(description)
 
+                print(CsWeapon.stickers)
+
 
                 
             
