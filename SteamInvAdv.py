@@ -6,7 +6,7 @@ import random
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
 from SteamApiCalls import getInvInfo
-from Classes import DBConnection, CsItem
+from Classes import DBConnection, CsItem, SwapGGInterface
 
 Dbcon = DBConnection()
 
@@ -51,11 +51,12 @@ for asset in inventoryPacketAssets:
                 CsWeapon.getInspectLink(description)
                 #sprawdza czy przedmiot jest gotowy na wymiane
                 CsWeapon.getTradebilityStatus(description)
-                #wykrywa wszystkie naklejki naklejone na broń i dodaje je do listy
+                #wykrywa wszystkie naklejki naklejone na broń i przechowuje je w liście
                 CsWeapon.getAppliedStickers(description)
-
-                print(CsWeapon.stickers)
-
+                #utworzenie objektu odpowiadającego za komunikacje z serwisem swap gg
+                SwapGGCon = SwapGGInterface()
+                SwapGGCon.connect(session)
+                SwapGGCon.sendScreenshot(CsWeapon.inspectLink)
 
                 
             

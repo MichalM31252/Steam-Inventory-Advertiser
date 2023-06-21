@@ -375,11 +375,9 @@ class CSGO_item():
             if (response_screenshot.json()['status'] == "OK"):
                 if (response_screenshot.json()['result']["state"] == "COMPLETED"):
                     self.screenshot = response_screenshot.json()['result']["imageLink"]
-                    self.item_float = str(response_screenshot.json()['result']["itemInfo"]["floatvalue"])[:9] #usuń pobieranie tylko 8 pierwszych znakow
+                    self.item_float = str(response_screenshot.json()['result']["itemInfo"]["floatvalue"])[:9]
 
-                    if stickers := response_screenshot.json()['result'][
-                        "itemInfo"
-                    ]["stickers"]:
+                    if stickers := response_screenshot.json()['result']["itemInfo"]["stickers"]:
                         if(len(stickers) >= 1):
                             objekt.sticker_1 = response_screenshot.json()['result']["itemInfo"]["stickers"][0]["name"]
                             if(len(stickers) >= 2):

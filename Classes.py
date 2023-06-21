@@ -1,11 +1,13 @@
 import mysql.connector
 import os
 from dotenv import load_dotenv
-import datetime
 import re
+import asyncio
+import socketio
+from websockets.sync.client import connect
+import time
 
 load_dotenv()
-
 
 class DBConnection():
     def __init__(self):
@@ -23,6 +25,33 @@ class DBConnection():
     def __del__(self):
         self.myCursor.close()
         self.myCursor.close()
+
+class SwapGGInterface():
+    def __init__(self) -> None:
+        self.url = "https://market-ws.swap.gg/"
+        self.marketUrl = "https://market-api.swap.gg"
+        self.socket = socketio.Client().connect('https://market-ws.swap.gg/')
+
+    def getWebsocketToken(self, session):
+        url = 'https://market-api.swap.gg/v1/user/websocket'
+        headers = {
+            'Authorization': os.getenv('SWAPGG_API_KEY')
+        }
+        response = session.get(url=url, headers = headers)
+        data = response.json()
+        if data['status'] == 'OK':
+            return data['result']['token']
+
+    def sendScreenshot(self, session, inspectLink):
+        url = f"{self.marketUrl}/v1/screenshot"
+        data = {
+            "inspectLink": inspectLink
+        }
+        headers = {
+            'Content-type': 'application/json',
+            'Authorization': os.getenv('SWAPGG_API_KEY')
+        }
+        session.post(url=url, json=data, headers=headers)
 
 class CsItem():
     def __init__(self, assetId, marketHashName):
@@ -46,7 +75,7 @@ class CsItem():
                     self.marketHashNameShorter = self.marketHashName.replace(key, value).replace(' | ',' ')
                 
     def getInspectLink(self,description):
-        self.inspectlink = description['actions'][0]['link'].replace('%owner_steamid%',os.getenv('STEAM_USERID64')).replace(" ", "%20").replace('%assetid%',self.assetId)
+        self.inspectLink = description['actions'][0]['link'].replace('%owner_steamid%',os.getenv('STEAM_USERID64')).replace(" ", "%20").replace('%assetid%',self.assetId)
                 
     def getTradebilityStatus(self, description):
         self.tradeable = 0 if description['tradable'] == 0 else 1
@@ -54,9 +83,8 @@ class CsItem():
     def getAppliedStickers(self, description):
         stickerResponse = description['descriptions'][-1]['value']
         if "sticker" in stickerResponse:
-            #wykorzystanie regexa do odczytania informacji zawartych w tagach html
             cleaner = re.compile('<.*?>') 
-            self.stickers = re.sub(cleaner, '', stickerResponse)[8:].split(", ")
+            self.stickers = re.sub(cleaner, '', stickerResponse)[9:].split(", ")
 
 #
 
