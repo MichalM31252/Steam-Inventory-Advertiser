@@ -1,12 +1,16 @@
 import requests
-import time
 import datetime
 import praw
+import socketio
 import random
+import os
+from dotenv import load_dotenv
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
 from SteamApiCalls import getInvInfo
 from Classes import DBConnection, CsItem, SwapGGInterface
+
+load_dotenv()
 
 Dbcon = DBConnection()
 
@@ -31,8 +35,13 @@ if(InventoryData["total_inventory_count"] == 0):
 inventoryPacketAssets = InventoryData["assets"]
 inventoryPacketDescriptions = InventoryData["descriptions"]
 
-#Niestety kolejność przedmiotów w assets i descriptions nie musi być ze sobą powiązana dlatego algorytm ma złożoność kwadratową
+#utworzenie objektu odpowiadającego za komunikacje z serwisem swap gg
+SwapGGClient = SwapGGInterface('https://market-ws.swap.gg/', os.getenv('SWAPGG_API_KEY'), session)
+SwapGGClient.connect()
 
+readyObjects = []
+nonreadyObjects = []
+#Niestety kolejność przedmiotów w assets i descriptions nie musi być ze sobą powiązana dlatego algorytm ma złożoność kwadratową
 correctItemTypes = ["Rifle", "Pistol", "SMG", "Sniper Rifle", "Gloves", "Knife", "Shotgun", "Machinegun"]
 for asset in inventoryPacketAssets:
     for description in inventoryPacketDescriptions:
@@ -53,12 +62,12 @@ for asset in inventoryPacketAssets:
                 CsWeapon.getTradebilityStatus(description)
                 #wykrywa wszystkie naklejki naklejone na broń i przechowuje je w liście
                 CsWeapon.getAppliedStickers(description)
-                #utworzenie objektu odpowiadającego za komunikacje z serwisem swap gg
-                SwapGGCon = SwapGGInterface()
-                SwapGGCon.connect(session)
-                SwapGGCon.sendScreenshot(CsWeapon.inspectLink)
+                #wysyła zapytanie o screenshot, reklama jest możliwa dopiero gdy wszystkie przedmioty są gotowe stąd ten wybór
+                CsWeapon = SwapGGClient.createScreenshot(CsWeapon)
 
-                
+                print(f"{CsWeapon.marketHashName} - {CsWeapon.screenshotLink}")
+
+SwapGGClient.disconnect() 
             
                 
 

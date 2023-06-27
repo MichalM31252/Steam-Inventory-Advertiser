@@ -4,8 +4,9 @@ from dotenv import load_dotenv
 import re
 import asyncio
 import socketio
+import requests
+import threading
 from websockets.sync.client import connect
-import time
 
 load_dotenv()
 
@@ -26,32 +27,51 @@ class DBConnection():
         self.myCursor.close()
         self.myCursor.close()
 
-class SwapGGInterface():
-    def __init__(self) -> None:
-        self.url = "https://market-ws.swap.gg/"
-        self.marketUrl = "https://market-api.swap.gg"
-        self.socket = socketio.Client().connect('https://market-ws.swap.gg/')
+class SwapGGInterface:
+    def __init__(self, url, authorizationToken, session):
+        self.socket = socketio.Client()
+        self.url = url
+        self.authorizationToken = authorizationToken
+        self.session = session
+        self.screenshot_ready = False
+        self.currentItem = None
 
-    def getWebsocketToken(self, session):
-        url = 'https://market-api.swap.gg/v1/user/websocket'
-        headers = {
-            'Authorization': os.getenv('SWAPGG_API_KEY')
-        }
-        response = session.get(url=url, headers = headers)
-        data = response.json()
-        if data['status'] == 'OK':
-            return data['result']['token']
+        self.socket.on('screenshot:ready', self.onScreenshotReady)
 
-    def sendScreenshot(self, session, inspectLink):
-        url = f"{self.marketUrl}/v1/screenshot"
+    def disconnect(self):
+        self.socket.disconnect()
+
+    # def onScreenshotReady(self, data):
+    #     if hasattr(self.currentItem, "inspectLink") and data['inspectLink'] == self.currentItem.inspectLink:
+    #         self.screenshot_ready = True
+
+    def waitForScreenshot(self, CsWeapon):
+        
+
+    def connect(self):
+        self.socket.connect(self.url)
+
+    def createScreenshot(self, CsWeapon):
+        self.currentItem = CsWeapon
+        url = "https://market-api.swap.gg/v1/screenshot"
         data = {
-            "inspectLink": inspectLink
+            "inspectLink": CsWeapon.inspectLink.replace("%20", " "),
         }
         headers = {
             'Content-type': 'application/json',
-            'Authorization': os.getenv('SWAPGG_API_KEY')
+            'Authorization': self.authorizationToken
         }
-        session.post(url=url, json=data, headers=headers)
+        r = self.session.post(url=url, json=data, headers=headers)
+        if r.status_code == 200:
+            if r.json()['result']['state'] == 'COMPLETED':
+                CsWeapon.screenshotLink, CsWeapon.item_float = r.json()['result']['imageLink'], str(r.json()['result']["itemInfo"]["floatvalue"])[:9]
+            elif r.json()['result']['state'] == 'IN_QUEUE':
+                #cekaj aż w odpowiedzi z websocketa pojawi się odpowiedni inspectlink
+                CsWeapon = self.waitForScreenshot(self.currentItem)
+            elif r.json()['result']['state'] in ['FAILED', 'ERROR']:
+                raise Exception("Wystąpił błąd podczas tworzenia screenshota")
+        self.currentItem = None
+        return CsWeapon
 
 class CsItem():
     def __init__(self, assetId, marketHashName):
@@ -69,7 +89,7 @@ class CsItem():
                 "Souvenir": "Souv"
             }
 
-            #nie ma return ponieważ mogą dla klucze pojawić się w nazwie
+            #nie ma return ponieważ może się pojawić kilka kluczy w nazwie
             for key, value in toShorten.items():
                 if key in self.marketHashName:
                     self.marketHashNameShorter = self.marketHashName.replace(key, value).replace(' | ',' ')
@@ -85,7 +105,3 @@ class CsItem():
         if "sticker" in stickerResponse:
             cleaner = re.compile('<.*?>') 
             self.stickers = re.sub(cleaner, '', stickerResponse)[9:].split(", ")
-
-#
-
-
