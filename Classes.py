@@ -7,6 +7,7 @@ import socketio
 import requests
 import threading
 from websockets.sync.client import connect
+import time
 
 load_dotenv()
 
@@ -41,12 +42,17 @@ class SwapGGInterface:
     def disconnect(self):
         self.socket.disconnect()
 
-    # def onScreenshotReady(self, data):
-    #     if hasattr(self.currentItem, "inspectLink") and data['inspectLink'] == self.currentItem.inspectLink:
-    #         self.screenshot_ready = True
+    def onScreenshotReady(self, data):
+        if hasattr(self.currentItem, "inspectLink") and data['inspectLink'] == self.currentItem.inspectLink:
+            self.screenshot_ready = True
 
     def waitForScreenshot(self, CsWeapon):
+        threading.Thread(target=self.socket).start()
         
+        # jest to jedyne rozwiązanie które nie wykorzystuje 90% procesora
+        while self.screenshot_ready == False:
+            time.sleep(1)
+        return CsWeapon
 
     def connect(self):
         self.socket.connect(self.url)
