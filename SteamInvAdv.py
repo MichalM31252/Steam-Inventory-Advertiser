@@ -9,6 +9,8 @@ from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
 from SteamApiCalls import getInvInfo
 from Classes import DBConnection, CsItem, SwapGGInterface
+from threading import Thread
+import sys
 
 load_dotenv()
 
@@ -35,9 +37,13 @@ if(InventoryData["total_inventory_count"] == 0):
 inventoryPacketAssets = InventoryData["assets"]
 inventoryPacketDescriptions = InventoryData["descriptions"]
 
-#utworzenie objektu odpowiadającego za komunikacje z serwisem swap gg
+#utworzenie objektu odpowiadającego za komunikacje z serwisem swap gg w odzdzielnym threadzie
 SwapGGClient = SwapGGInterface('https://market-ws.swap.gg/', os.getenv('SWAPGG_API_KEY'), session)
-SwapGGClient.connect()
+
+def setUpSwapGG(SwapGGClient):
+    SwapGGClient.connect()
+
+thread = Thread(target=setUpSwapGG, daemon=True, args=(SwapGGClient,)).start()
 
 readyObjects = []
 nonreadyObjects = []
@@ -66,8 +72,6 @@ for asset in inventoryPacketAssets:
                 CsWeapon = SwapGGClient.createScreenshot(CsWeapon)
 
                 print(f"{CsWeapon.marketHashName} - {CsWeapon.screenshotLink}")
-
-SwapGGClient.disconnect() 
             
                 
 

@@ -5,7 +5,7 @@ import re
 import asyncio
 import socketio
 import requests
-import threading
+
 from websockets.sync.client import connect
 import time
 
@@ -23,10 +23,7 @@ class DBConnection():
         row_count = self.myCursor.rowcount ######
         if(row_count == 1):
             return True
-        
-    def __del__(self):
-        self.myCursor.close()
-        self.myCursor.close()
+        return False
 
 class SwapGGInterface:
     def __init__(self, url, authorizationToken, session):
@@ -39,20 +36,19 @@ class SwapGGInterface:
 
         self.socket.on('screenshot:ready', self.onScreenshotReady)
 
-    def disconnect(self):
-        self.socket.disconnect()
-
     def onScreenshotReady(self, data):
-        if hasattr(self.currentItem, "inspectLink") and data['inspectLink'] == self.currentItem.inspectLink:
-            self.screenshot_ready = True
+        if hasattr(self.currentItem, "inspectLink"):
+            self.currentItem.inspectLink = self.currentItem.inspectLink.replace("%20", " ")
+            if str(data['inspectLink']) == self.currentItem.inspectLink:
+                self.screenshot_ready = True
 
     def waitForScreenshot(self, CsWeapon):
-        threading.Thread(target=self.socket).start()
-        
         # jest to jedyne rozwiązanie które nie wykorzystuje 90% procesora
         while self.screenshot_ready == False:
             time.sleep(1)
-        return CsWeapon
+        #ustawienie flagi na następny przedmiot
+        self.screenshot_ready = False
+        return self.createScreenshot(CsWeapon)
 
     def connect(self):
         self.socket.connect(self.url)
@@ -74,11 +70,9 @@ class SwapGGInterface:
             elif r.json()['result']['state'] == 'IN_QUEUE':
                 #cekaj aż w odpowiedzi z websocketa pojawi się odpowiedni inspectlink
                 CsWeapon = self.waitForScreenshot(self.currentItem)
-            elif r.json()['result']['state'] in ['FAILED', 'ERROR']:
-                raise Exception("Wystąpił błąd podczas tworzenia screenshota")
+
         self.currentItem = None
         return CsWeapon
-
 class CsItem():
     def __init__(self, assetId, marketHashName):
         self.assetId = assetId
