@@ -1,16 +1,9 @@
 import requests
-import datetime
-import praw
-import socketio
-import random
 import os
 from dotenv import load_dotenv
-from selenium import webdriver
-from selenium.webdriver.chrome.options import Options
 from SteamApiCalls import getInvInfo
 from Classes import DBConnection, CsItem, SwapGGInterface
 from threading import Thread
-import sys
 
 load_dotenv()
 
@@ -59,7 +52,7 @@ for asset in inventoryPacketAssets:
                     print("CongetAppliedStickerstinue")
                     continue
 
-                CsWeapon = CsItem(asset['assetid'], description['market_hash_name'])
+                CsWeapon = CsItem(asset['assetid'], description['market_hash_name'], os.getenv('STEAM_USERID64'))
                 #tworzy specjalny wariant nazwy ułatwiający reklame na różnych platformach społecznościowych
                 CsWeapon.getMarketHashNameShorter()
                 #tworzy link potrzebny do obejrzenia broni

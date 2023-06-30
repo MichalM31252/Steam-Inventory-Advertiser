@@ -1,10 +1,7 @@
 import mysql.connector
-import os
 from dotenv import load_dotenv
 import re
-import asyncio
 import socketio
-import requests
 
 from websockets.sync.client import connect
 import time
@@ -21,7 +18,7 @@ class DBConnection():
         self.myCursor.execute("SELECT assetId, COUNT(*) FROM useritems WHERE assetId = %s GROUP BY assetId", (assetId,)) ######
         self.myCursor.fetchall()
         row_count = self.myCursor.rowcount ######
-        if(row_count == 1):
+        if row_count == 1:
             return True
         return False
 
@@ -53,7 +50,7 @@ class SwapGGInterface:
     def connect(self):
         self.socket.connect(self.url)
 
-    def createScreenshot(self, CsWeapon):
+    def fetchScreenshotInfo(self, CsWeapon):
         self.currentItem = CsWeapon
         url = "https://market-api.swap.gg/v1/screenshot"
         data = {
@@ -63,7 +60,10 @@ class SwapGGInterface:
             'Content-type': 'application/json',
             'Authorization': self.authorizationToken
         }
-        r = self.session.post(url=url, json=data, headers=headers)
+        return self.session.post(url=url, json=data, headers=headers)
+
+    def createScreenshot(self, CsWeapon):
+        r = self.fetchScreenshotInfo(CsWeapon)
         if r.status_code == 200:
             if r.json()['result']['state'] == 'COMPLETED':
                 CsWeapon.screenshotLink, CsWeapon.item_float = r.json()['result']['imageLink'], str(r.json()['result']["itemInfo"]["floatvalue"])[:9]
@@ -74,9 +74,10 @@ class SwapGGInterface:
         self.currentItem = None
         return CsWeapon
 class CsItem():
-    def __init__(self, assetId, marketHashName):
+    def __init__(self, assetId, marketHashName, steamUserId64):
         self.assetId = assetId
         self.marketHashName = marketHashName
+        self.steamUserId64 = steamUserId64
 
     def getMarketHashNameShorter(self):
             toShorten = {
@@ -95,7 +96,7 @@ class CsItem():
                     self.marketHashNameShorter = self.marketHashName.replace(key, value).replace(' | ',' ')
                 
     def getInspectLink(self,description):
-        self.inspectLink = description['actions'][0]['link'].replace('%owner_steamid%',os.getenv('STEAM_USERID64')).replace(" ", "%20").replace('%assetid%',self.assetId)
+        self.inspectLink = description['actions'][0]['link'].replace('%owner_steamid%',self.steamUserId64).replace(" ", "%20").replace('%assetid%',self.assetId)
                 
     def getTradebilityStatus(self, description):
         self.tradeable = 0 if description['tradable'] == 0 else 1
