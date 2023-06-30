@@ -1,9 +1,8 @@
 import requests
 import os
 from dotenv import load_dotenv
-from SteamApiCalls import getInvInfo
-from Classes import DBConnection, CsItem, SwapGGInterface
-from threading import Thread
+from classes.steam_interface import SteamInterface
+from classes.DBConnection
 
 load_dotenv()
 
