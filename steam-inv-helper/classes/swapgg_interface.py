@@ -1,12 +1,12 @@
 import socketio
 import time
+from requests import request
 
 class SwapGGInterface:
-    def __init__(self, url, authorizationToken, session):
+    def __init__(self, url, authorizationToken):
         self.socket = socketio.Client()
         self.url = url
         self.authorizationToken = authorizationToken
-        self.session = session
         self.screenshot_ready = False
         self.currentItem = None
 
@@ -19,10 +19,10 @@ class SwapGGInterface:
                 self.screenshot_ready = True
 
     def waitForScreenshot(self, CsWeapon):
-        # jest to jedyne rozwiązanie które nie wykorzystuje 90% procesora
+        # this is the only solution that doesn't eat up 90% of the processing power
         while self.screenshot_ready == False:
             time.sleep(1)
-        #ustawienie flagi na następny przedmiot
+        #reset the flag for the next screenshot
         self.screenshot_ready = False
         return self.createScreenshot(CsWeapon)
 
@@ -39,7 +39,7 @@ class SwapGGInterface:
             'Content-type': 'application/json',
             'Authorization': self.authorizationToken
         }
-        return self.session.post(url=url, json=data, headers=headers)
+        return self.request.post(url=url, json=data, headers=headers)
 
     def createScreenshot(self, CsWeapon):
         r = self.fetchScreenshotInfo(CsWeapon)
@@ -47,7 +47,7 @@ class SwapGGInterface:
             if r.json()['result']['state'] == 'COMPLETED':
                 CsWeapon.screenshotLink, CsWeapon.item_float = r.json()['result']['imageLink'], str(r.json()['result']["itemInfo"]["floatvalue"])[:9]
             elif r.json()['result']['state'] == 'IN_QUEUE':
-                #cekaj aż w odpowiedzi z websocketa pojawi się odpowiedni inspectlink
+                #wait untill a correct inspectlink is returned
                 CsWeapon = self.waitForScreenshot(self.currentItem)
 
         self.currentItem = None

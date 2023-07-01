@@ -5,7 +5,7 @@ class DBConnection():
         self.con = mysql.connector.connect(host="localhost", user="root", password="", database="przedmioty_cs")
         self.myCursor = self.con.cursor(buffered=True)
 
-    #sprawdzenie czy informacje o przedmiocie znajdują się w bazie danych
+    #checks if a record with the given assetId exists in the database
     def checkForExistingRecords(self, assetId):
         self.myCursor.execute("SELECT assetId, COUNT(*) FROM useritems WHERE assetId = %s GROUP BY assetId", (assetId,)) ######
         self.myCursor.fetchall()

@@ -17,7 +17,7 @@ class CsItem():
                 "Souvenir": "Souv"
             }
 
-            #nie ma return ponieważ może się pojawić kilka kluczy w nazwie
+            #there isn't a return because multiple matches can be spotted in the markethashname
             for key, value in toShorten.items():
                 if key in self.marketHashName:
                     self.marketHashNameShorter = self.marketHashName.replace(key, value).replace(' | ',' ')
