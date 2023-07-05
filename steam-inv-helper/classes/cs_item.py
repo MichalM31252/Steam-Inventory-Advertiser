@@ -1,26 +1,27 @@
 import re
 
 class CsItem():
-    def __init__(self, asset_id, market_hash_name, steam_user_id64):
+    def __init__(self, asset_id, name, exterior, steam_user_id64):
         self.asset_id = asset_id
-        self.market_hash_name = market_hash_name
+        self.name = name
+        self.exterior = exterior
         self.steam_user_id64 = steam_user_id64
 
-    def set_market_hash_name_shorter(self):
+    def set_exterior(self):
             to_shorten = {
-                "(Factory New)": "FN",
-                "(Minimal Wear)": "MW",
-                "(Field-Tested)": "FT",
-                "(Well-Worn)": "WW",
-                "(Battle-Scarred)":"BS",
-                "StatTrak\u2122": "ST",
-                "Souvenir": "Souv"
+                "Factory New": "FN",
+                "Minimal Wear": "MW",
+                "Field-Tested": "FT",
+                "Well-Worn": "WW",
+                "Battle-Scarred":"BS",
+                # "StatTrak\u2122": "ST",
+                # "Souvenir": "Souv"
             }
 
-            #there isn't a return because multiple matches can be spotted in the market_hash_name
             for key, value in to_shorten.items():
-                if key in self.market_hash_name:
-                    self.market_hash_name_shorter = self.market_hash_name.replace(key, value).replace(' | ',' ')
+                if key in self.exterior:
+                    self.exterior = self.exterior.replace(key, value).replace(' | ',' ')
+                    return
                 
     def set_inspect_link(self,description):
         self.inspect_link = description['actions'][0]['link'].replace('%owner_steamid%',self.steam_user_id64).replace(" ", "%20").replace('%assetid%',self.asset_id)

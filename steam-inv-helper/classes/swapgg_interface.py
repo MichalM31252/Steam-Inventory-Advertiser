@@ -8,7 +8,7 @@ class SwapGGInterface:
         self.url = url
         self.authorization_token = authorization_token
         self.screenshot_ready = False
-        self.currentItem = None
+        self.current_item = None
 
         self.socket.on('screenshot:ready', self.on_screenshot_ready)
 
@@ -22,9 +22,9 @@ class SwapGGInterface:
         # this is the only solution that doesn't eat up 90% of the processing power
         while self.screenshot_ready == False:
             time.sleep(1)
-        #reset the flag for the next screenshot
+        # reset the flag for the next screenshot
         self.screenshot_ready = False
-        return self.create_screenshot(CsWeapon)
+        return self.generate_screenshot(CsWeapon)
 
     def connect(self):
         self.socket.connect(self.url)
@@ -41,14 +41,13 @@ class SwapGGInterface:
         }
         return requests.post(url=url, json=data, headers=headers)
 
-    def create_screenshot(self, CsWeapon):
+    def generate_screenshot(self, CsWeapon):
         r = self.fetch_screenshot_info(CsWeapon)
         if r.status_code == 200:
             if r.json()['result']['state'] == 'COMPLETED':
                 CsWeapon.screenshot_link, CsWeapon.item_float = r.json()['result']['imageLink'], str(r.json()['result']["itemInfo"]["floatvalue"])[:9]
             elif r.json()['result']['state'] == 'IN_QUEUE':
-                #wait untill a correct inspect_link is returned
+                # wait untill a correct inspect_link is returned
                 CsWeapon = self.wait_for_screenshot(self.current_item)
-
         self.current_item = None
         return CsWeapon
