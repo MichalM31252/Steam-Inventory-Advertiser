@@ -49,7 +49,7 @@ def main():
                     if Dbcon.check_for_existing_records(asset['assetid']):
                         continue
 
-                    CsWeapon = CsItem(asset['assetid'], description['name'], str(description['descriptions'][0]['value'].split()[1:2]), os.getenv('STEAM_USERID64'))
+                    CsWeapon = CsItem(asset['assetid'], description['name'], str(description['descriptions'][0]['value'][10:]), os.getenv('STEAM_USERID64'))
                     #creates a special shortened variant of an items name to make advertising on different websites easier
                     CsWeapon.set_exterior()
                     #sets a special link which is needed to inspect the item as a property
