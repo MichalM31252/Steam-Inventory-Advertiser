@@ -7,21 +7,33 @@ class CsItem():
         self.exterior = exterior
         self.steam_user_id64 = steam_user_id64
 
-    def set_exterior(self):
+    def set_shorter_exterior(self):
             to_shorten = {
                 "Factory New": "FN",
                 "Minimal Wear": "MW",
                 "Field-Tested": "FT",
                 "Well-Worn": "WW",
                 "Battle-Scarred":"BS",
-                # "StatTrak\u2122": "ST",
-                # "Souvenir": "Souv"
             }
 
+            self.exterior = self.exterior.replace(' | ',' ')
             for key, value in to_shorten.items():
                 if key in self.exterior:
-                    self.exterior = self.exterior.replace(key, value).replace(' | ',' ')
+                    self.exterior = self.exterior.replace(key, value)
                     return
+                
+    def set_shorter_name(self):
+        to_shorten = {
+            "StatTrak\u2122": "ST",
+            "Souvenir": "Souv"
+        }
+        
+        self.name = self.name.replace(' | ',' ')
+        for key, value in to_shorten.items():
+            if key in self.name:
+                self.name = self.name.replace(key, value).replace(' | ',' ')
+                return
+
                 
     def set_inspect_link(self,description):
         self.inspect_link = description['actions'][0]['link'].replace('%owner_steamid%',self.steam_user_id64).replace(" ", "%20").replace('%assetid%',self.asset_id)

@@ -50,15 +50,17 @@ def main():
                         continue
 
                     CsWeapon = CsItem(asset['assetid'], description['name'], str(description['descriptions'][0]['value'][10:]), os.getenv('STEAM_USERID64'))
-                    #creates a special shortened variant of an items name to make advertising on different websites easier
-                    CsWeapon.set_exterior()
-                    #sets a special link which is needed to inspect the item as a property
+                    # sets a special shortened variant of items name to make advertising on different websites easier
+                    CsWeapon.set_shorter_name()
+                    # sets a special shortened variant of items exterior to make advertising easier
+                    CsWeapon.set_shorter_exterior()
+                    # sets a special link which is needed to inspect the item as a property
                     CsWeapon.set_inspect_link(description)
-                    #checks if item is tradeable and adds a property based on that info
+                    # checks if item is tradeable and adds a property based on that info
                     CsWeapon.set_tradebility_status(description)
-                    #detects every applied sticker and adds it to a list as a property
+                    # detects every applied sticker and adds it to a list as a property
                     CsWeapon.set_applied_stickers(description)
-                    #generates a screenshot and float data of the item 
+                    # generates a screenshot and float data of the item 
                     CsWeapon = SwapGGClient.generate_screenshot(CsWeapon)
 
                     Dbcon.add_new_item(CsWeapon)
