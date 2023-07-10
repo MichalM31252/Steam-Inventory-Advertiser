@@ -16,3 +16,10 @@ class DbConnection():
         properties = (CsItem.asset_id, CsItem.name, CsItem.inspect_link, CsItem.exterior, CsItem.item_float, CsItem.screenshot_link, CsItem.tradeable)
         self.my_cursor.execute("INSERT INTO items (asset_id, name, inspect_link, exterior, item_float, screenshot_link, tradeable) VALUES (%s, %s, %s, %s, %s, %s, %s)", properties)
         self.con.commit()
+
+    def add_applied_stickers(self, CsItem):
+        # we need a function that will fill the table with null values if there are no stickers
+        # positions of the stickers matter so we will have to take the variables from the swapp gg interface
+        properties = (CsItem.asset_id, CsItem.stickers[0], CsItem.stickers[1], CsItem.stickers[2], CsItem.stickers[3], CsItem.stickers[4])
+        self.my_cursor.execute("INSERT INTO applied_stickers (asset_id, sticker_1, sticker_2, sticker_3, sticker_4, sticker_5) VALUES (%s, %s, %s, %s, %s, %s)", properties)
+        self.con.commit()

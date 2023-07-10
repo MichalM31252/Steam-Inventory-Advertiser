@@ -41,8 +41,14 @@ class CsItem():
     def set_tradebility_status(self, description):
         self.tradeable = 0 if description['tradable'] == 0 else 1
 
-    def set_applied_stickers(self, description):
-        sticker_response = description['descriptions'][-1]['value']
-        if "sticker" in sticker_response:
-            cleaner = re.compile('<.*?>') 
-            self.stickers = re.sub(cleaner, '', sticker_response)[9:].split(", ")
+    def set_applied_stickers(self, swapgg_response):
+        # this version of the code doesn't return the positions of stickers, it could be used once swapgg is no longer available
+        # sticker_response = description['descriptions'][-1]['value']
+        # if "sticker" in sticker_response:
+        #     cleaner = re.compile('<.*?>') 
+        #     self.stickers = re.sub(cleaner, '', sticker_response)[9:].split(", ")
+
+        self.stickers = [None, None, None, None, None]
+        sticker_list = swapgg_response.json()['result']['itemInfo']['stickers']
+        for element in sticker_list:
+            self.stickers[element['slot']] = element['name']

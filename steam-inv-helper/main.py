@@ -6,9 +6,9 @@ from classes.cs_item import CsItem
 from classes.db_connection import DbConnection
 from classes.swapgg_interface import SwapGGInterface
 from classes.steam_interface import SteamInterface
+from time import sleep
 
 def main():
-
     load_dotenv()
     Dbcon = DbConnection()
     InventoryData = SteamInterface.get_inv_info()
@@ -59,14 +59,23 @@ def main():
                     # checks if item is tradeable and adds a property based on that info
                     CsWeapon.set_tradebility_status(description)
                     # detects every applied sticker and adds it to a list as a property
-                    CsWeapon.set_applied_stickers(description)
-                    # generates a screenshot and float data of the item 
-                    CsWeapon = SwapGGClient.generate_screenshot(CsWeapon)
 
-                    Dbcon.add_new_item(CsWeapon)
-                
+                    swapgg_response = SwapGGClient.fetch_screenshot_info(CsWeapon)
+                    if swapgg_response == False:
+                        continue
+
+                    CsWeapon = SwapGGClient.get_screenshot(CsWeapon, swapgg_response)
+                    
+                    CsWeapon.set_applied_stickers(swapgg_response)
+                    # generates a screenshot and float data of the item 
                     
 
+                    Dbcon.add_new_item(CsWeapon)
+                    sleep(1)
+                    Dbcon.add_applied_stickers(CsWeapon)
+                
+if __name__ == "__main__":
+    main()
 
                 
 
