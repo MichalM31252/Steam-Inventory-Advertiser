@@ -23,3 +23,15 @@ class DbConnection():
         properties = (CsItem.asset_id, CsItem.stickers[0], CsItem.stickers[1], CsItem.stickers[2], CsItem.stickers[3], CsItem.stickers[4])
         self.my_cursor.execute("INSERT INTO applied_stickers (asset_id, sticker_1, sticker_2, sticker_3, sticker_4, sticker_5) VALUES (%s, %s, %s, %s, %s, %s)", properties)
         self.con.commit()
+
+    def delete_missing_items(self, inventory_packet_assets):
+        self.my_cursor.execute("SELECT asset_id FROM items")
+        self.con.commit()
+        self.my_cursor.fetchall()
+        for element in self.my_cursor:
+            # checks if the asset_id from the database is not in the inventory_packet_assets dictionary
+            result = all(element not in s for s in inventory_packet_assets)
+            if result:
+                self.my_cursor.execute("DELETE FROM items WHERE asset_id = %s", (element,))
+                self.con.commit()
+

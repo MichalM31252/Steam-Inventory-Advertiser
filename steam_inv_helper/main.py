@@ -6,7 +6,6 @@ from classes.cs_item import CsItem
 from classes.db_connection import DbConnection
 from classes.swapgg_interface import SwapGGInterface
 from classes.steam_interface import SteamInterface
-from time import sleep
 
 def main():
     load_dotenv()
@@ -20,7 +19,6 @@ def main():
             quit()
     except Exception:
         print("Too many requests, try again later!")
-        print(InventoryData)
         quit()
 
     if(InventoryData["total_inventory_count"] == 0):
@@ -37,6 +35,8 @@ def main():
         SwapGGClient.connect()
 
     Thread(target=set_up_swapgg, daemon=True, args=(SwapGGClient,)).start()
+
+    Dbcon.delete_missing_items(inventory_packet_assets)
 
     #unfortunetly the order of items in assets and descriptions don't always correspond with eachother
     correct_item_types = ["Rifle", "Pistol", "SMG", "Sniper Rifle", "Gloves", "Knife", "Shotgun", "Machinegun"]
@@ -68,10 +68,8 @@ def main():
                     
                     CsWeapon.set_applied_stickers(swapgg_response)
                     # generates a screenshot and float data of the item 
-                    
 
                     Dbcon.add_new_item(CsWeapon)
-                    sleep(1)
                     Dbcon.add_applied_stickers(CsWeapon)
                 
 if __name__ == "__main__":
