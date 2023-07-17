@@ -6,8 +6,8 @@ class DbConnection():
         self.my_cursor = self.con.cursor(buffered=True)
 
     # checks if a record with the given assetId exists in the database
-    def check_for_existing_records(self, assetId):
-        self.my_cursor.execute("SELECT asset_id, COUNT(*) FROM items WHERE asset_id = %s GROUP BY asset_id", (assetId,)) ######
+    def check_for_existing_records(self, asset_id):
+        self.my_cursor.execute("SELECT asset_id, COUNT(*) FROM items WHERE asset_id = %s GROUP BY asset_id", (asset_id,)) ######
         self.my_cursor.fetchall()
         row_count = self.my_cursor.rowcount ######
         return row_count == 1

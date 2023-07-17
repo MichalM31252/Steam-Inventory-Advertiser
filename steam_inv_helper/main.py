@@ -7,29 +7,32 @@ from classes.db_connection import DbConnection
 from classes.swapgg_interface import SwapGGInterface
 from classes.steam_interface import SteamInterface
 
+
 def main():
     load_dotenv()
     Dbcon = DbConnection()
-    InventoryData = SteamInterface.get_inv_info()
+    InventoryData = SteamInterface.get_inv_info(os.getenv("STEAM_USERID64"))
 
-    #checks if the request was a success
+    # checks if the request was a success
     try:
-        if(InventoryData["success"] != 1):
+        if InventoryData["success"] != 1:
             print("Request was not realised! Success != 1")
             quit()
     except Exception:
         print("Too many requests, try again later!")
         quit()
 
-    if(InventoryData["total_inventory_count"] == 0):
+    if InventoryData["total_inventory_count"] == 0:
         print("There aren't any items in your inventory!")
         quit()
 
     inventory_packet_assets = InventoryData["assets"]
     inventory_packet_descriptions = InventoryData["descriptions"]
 
-    #create an object which is responsible for communicating with the swappgg api service
-    SwapGGClient = SwapGGInterface('https://market-ws.swap.gg/', os.getenv('SWAPGG_API_KEY'))
+    # create an object which is responsible for communicating with the swappgg api service
+    SwapGGClient = SwapGGInterface(
+        "https://market-ws.swap.gg/", os.getenv("SWAPGG_API_KEY")
+    )
 
     def set_up_swapgg(SwapGGClient):
         SwapGGClient.connect()
@@ -38,18 +41,36 @@ def main():
 
     Dbcon.delete_missing_items(inventory_packet_assets)
 
-    #unfortunetly the order of items in assets and descriptions don't always correspond with eachother
-    correct_item_types = ["Rifle", "Pistol", "SMG", "Sniper Rifle", "Gloves", "Knife", "Shotgun", "Machinegun"]
+    # unfortunetly the order of items in assets and descriptions don't always correspond with eachother
+    correct_item_types = [
+        "Rifle",
+        "Pistol",
+        "SMG",
+        "Sniper Rifle",
+        "Gloves",
+        "Knife",
+        "Shotgun",
+        "Machinegun",
+    ]
     for asset in inventory_packet_assets:
         for description in inventory_packet_descriptions:
-            if (asset['classid'] == description['classid'] and asset['instanceid'] == description['instanceid']):
+            if (
+                asset["classid"] == description["classid"]
+                and asset["instanceid"] == description["instanceid"]
+            ):
                 item_type = description["tags"][0]["localized_tag_name"]
-                if item_type in correct_item_types: #checks if an item is worth advertising
-
-                    if Dbcon.check_for_existing_records(asset['assetid']):
+                if (
+                    item_type in correct_item_types
+                ):  # checks if an item is worth advertising
+                    if Dbcon.check_for_existing_records(asset["assetid"]):
                         continue
 
-                    CsWeapon = CsItem(asset['assetid'], description['name'], str(description['descriptions'][0]['value'][10:]), os.getenv('STEAM_USERID64'))
+                    CsWeapon = CsItem(
+                        asset["assetid"],
+                        description["name"],
+                        str(description["descriptions"][0]["value"][10:]),
+                        os.getenv("STEAM_USERID64"),
+                    )
                     # sets a special shortened variant of items name to make advertising on different websites easier
                     CsWeapon.set_shorter_name()
                     # sets a special shortened variant of items exterior to make advertising easier
@@ -65,22 +86,13 @@ def main():
                         continue
 
                     CsWeapon = SwapGGClient.get_screenshot(CsWeapon, swapgg_response)
-                    
+
                     CsWeapon.set_applied_stickers(swapgg_response)
-                    # generates a screenshot and float data of the item 
+                    # generates a screenshot and float data of the item
 
                     Dbcon.add_new_item(CsWeapon)
                     Dbcon.add_applied_stickers(CsWeapon)
-                
+
+
 if __name__ == "__main__":
     main()
-
-                
-
-            
-    
-
-
-
-
-

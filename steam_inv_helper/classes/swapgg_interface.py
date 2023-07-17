@@ -2,6 +2,7 @@ import socketio
 import time
 import requests
 
+
 class SwapGGInterface:
     def __init__(self, url, authorization_token):
         self.socket = socketio.Client()
@@ -10,17 +11,19 @@ class SwapGGInterface:
         self.screenshot_ready = False
         self.current_item = None
 
-        self.socket.on('screenshot:ready', self.on_screenshot_ready)
+        self.socket.on("screenshot:ready", self.on_screenshot_ready)
 
     def on_screenshot_ready(self, data):
         if hasattr(self.current_item, "inspect_link"):
-            self.current_item.inspect_link = self.current_item.inspect_link.replace("%20", " ")
-            if str(data['inspectLink']) == self.current_item.inspect_link:
+            self.current_item.inspect_link = self.current_item.inspect_link.replace(
+                "%20", " "
+            )
+            if str(data["inspectLink"]) == self.current_item.inspect_link:
                 self.screenshot_ready = True
 
     def wait_for_screenshot(self, CsWeapon):
         # this is the only solution that doesn't eat up 90% of the processing power
-        while self.screenshot_ready == False:
+        while not self.screenshot_ready:
             time.sleep(1)
         # reset the flag for the next screenshot
         self.screenshot_ready = False
@@ -36,16 +39,20 @@ class SwapGGInterface:
             "inspectLink": CsWeapon.inspect_link.replace("%20", " "),
         }
         headers = {
-            'Content-type': 'application/json',
-            'Authorization': self.authorization_token
+            "Content-type": "application/json",
+            "Authorization": self.authorization_token,
         }
         res = requests.post(url=url, json=data, headers=headers)
         return res if res.status_code == 200 else False
 
     def get_screenshot(self, CsWeapon, swapgg_response):
-        if swapgg_response.json()['result']['state'] == 'COMPLETED':
-            CsWeapon.screenshot_link, CsWeapon.item_float = swapgg_response.json()['result']['imageLink'], str(swapgg_response.json()['result']["itemInfo"]["floatvalue"])[:9]
-        elif swapgg_response.json()['result']['state'] == 'IN_QUEUE':
+        screenshot_status = swapgg_response.json()["result"]["state"]
+        if screenshot_status == "COMPLETED":
+            CsWeapon.screenshot_link, CsWeapon.item_float = (
+                swapgg_response.json()["result"]["imageLink"],
+                str(swapgg_response.json()["result"]["itemInfo"]["floatvalue"])[:9],
+            )
+        elif screenshot_status == "IN_QUEUE":
             # wait untill a correct inspect_link is returned
             CsWeapon = self.wait_for_screenshot(self.current_item)
         self.current_item = None
