@@ -21,13 +21,13 @@ class SwapGGInterface:
             if str(data["inspectLink"]) == self.current_item.inspect_link:
                 self.screenshot_ready = True
 
-    def wait_for_screenshot(self, CsWeapon):
+    def wait_for_screenshot(self, CsWeapon, swapgg_response):
         # this is the only solution that doesn't eat up 90% of the processing power
         while not self.screenshot_ready:
             time.sleep(1)
         # reset the flag for the next screenshot
         self.screenshot_ready = False
-        return self.get_screenshot(CsWeapon)
+        return self.get_screenshot(CsWeapon, swapgg_response)
 
     def connect(self):
         self.socket.connect(self.url)
@@ -54,6 +54,6 @@ class SwapGGInterface:
             )
         elif screenshot_status == "IN_QUEUE":
             # wait untill a correct inspect_link is returned
-            CsWeapon = self.wait_for_screenshot(self.current_item)
+            CsWeapon = self.wait_for_screenshot(self.current_item, swapgg_response)
         self.current_item = None
         return CsWeapon

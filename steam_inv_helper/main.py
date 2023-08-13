@@ -52,6 +52,7 @@ def main():
         "Shotgun",
         "Machinegun",
     ]
+
     for asset in inventory_packet_assets:
         for description in inventory_packet_descriptions:
             if (
@@ -71,8 +72,6 @@ def main():
                         str(description["descriptions"][0]["value"][10:]),
                         os.getenv("STEAM_USERID64"),
                     )
-                    # sets a special shortened variant of items name to make advertising on different websites easier
-                    CsWeapon.set_shorter_name()
                     # sets a special shortened variant of items exterior to make advertising easier
                     CsWeapon.set_shorter_exterior()
                     # sets a special link which is needed to inspect the item as a property

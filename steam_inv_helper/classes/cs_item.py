@@ -21,18 +21,6 @@ class CsItem():
                 if key in self.exterior:
                     self.exterior = self.exterior.replace(key, value)
                     return
-                
-    def set_shorter_name(self):
-        to_shorten = {
-            "StatTrak\u2122": "ST",
-            "Souvenir": "Souv"
-        }
-        
-        self.name = self.name.replace(' | ',' ')
-        for key, value in to_shorten.items():
-            if key in self.name:
-                self.name = self.name.replace(key, value).replace(' | ',' ')
-                return
 
                 
     def set_inspect_link(self,description):
