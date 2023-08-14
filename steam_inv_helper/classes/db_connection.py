@@ -55,9 +55,11 @@ class DbConnection:
         self.my_cursor.execute("SELECT asset_id FROM items")
         self.con.commit()
         what = self.my_cursor.fetchall()
-        for element in what:
-            if all(ele["assetid"] != element[0] for ele in inventory_packet_assets):
-                self.my_cursor.execute(
-                    "DELETE FROM items WHERE asset_id = %s", (element[0],)
-                )
-                self.con.commit()
+        toDelete = [
+            str(element[0])
+            for element in what
+            if all(ele["assetid"] != element[0] for ele in inventory_packet_assets)
+        ]
+        print(tuple(toDelete))
+        self.my_cursor.execute(f"DELETE FROM items WHERE asset_id IN {tuple(toDelete)}")
+        self.con.commit()
