@@ -52,14 +52,9 @@ class DbConnection:
         self.con.commit()
 
     def delete_missing_items(self, inventory_packet_assets):
-        self.my_cursor.execute("SELECT asset_id FROM items")
-        self.con.commit()
-        what = self.my_cursor.fetchall()
-        toDelete = [
-            str(element[0])
-            for element in what
-            if all(ele["assetid"] != element[0] for ele in inventory_packet_assets)
-        ]
-        print(tuple(toDelete))
-        self.my_cursor.execute(f"DELETE FROM items WHERE asset_id IN {tuple(toDelete)}")
+        toDelete = [element["assetid"] for element in inventory_packet_assets]
+        placeholder = "%s"
+        placeholders = ", ".join(placeholder for _ in toDelete)
+        query = f"DELETE FROM items WHERE asset_id NOT IN ({placeholders})"
+        self.my_cursor.execute(query, toDelete)
         self.con.commit()
