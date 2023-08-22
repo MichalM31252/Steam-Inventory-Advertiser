@@ -18,7 +18,7 @@ class DbConnection:
         row_count = self.my_cursor.rowcount  ######
         return row_count == 1
 
-    async def add_new_item(self, CsItem):
+    def add_new_item(self, CsItem):
         properties = (
             CsItem.asset_id,
             CsItem.name,
@@ -34,7 +34,7 @@ class DbConnection:
         )
         self.con.commit()
 
-    async def add_applied_stickers(self, CsItem):
+    def add_applied_stickers(self, CsItem):
         properties = (
             CsItem.asset_id,
             CsItem.stickers[0],
@@ -49,10 +49,15 @@ class DbConnection:
         )
         self.con.commit()
 
-    def delete_missing_items(self, inventory_packet_assets):
-        toDelete = [element["assetid"] for element in inventory_packet_assets]
+    def get_asset_id_list_to_delete(self, inventory_packet_assets):
+        asset_id_list_to_delete = [
+            element["assetid"] for element in inventory_packet_assets
+        ]
         placeholder = "%s"
-        placeholders = ", ".join(placeholder for _ in toDelete)
-        query = f"DELETE FROM items WHERE asset_id NOT IN ({placeholders})"
-        self.my_cursor.execute(query, toDelete)
+        placeholders = ", ".join(placeholder for _ in asset_id_list_to_delete)
+        return asset_id_list_to_delete, placeholders
+
+    def delete_items(self, table_name, asset_id_list_to_delete, placeholders):
+        query = f"DELETE FROM {table_name} WHERE asset_id NOT IN ({placeholders})"
+        self.my_cursor.execute(query, asset_id_list_to_delete)
         self.con.commit()

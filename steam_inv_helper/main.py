@@ -15,9 +15,13 @@ async def main():
     Dbcon = DbConnection()
     # next time make a string that has all the data from the inv and make it a backup to test the program once you get
     # rate limited so you don't waste multiple hours waiting until you get access to the service
-    InventoryData = SteamInterface.get_inv_info(os.getenv("STEAM_USERID64"))
+    # InventoryData = SteamInterface.get_inv_info(os.getenv("STEAM_USERID64"))
+    # print(json.dumps(InventoryData))
 
-    InventoryData = open()
+    dirname = os.path.dirname(__file__)
+    filename = os.path.join(dirname, "example_data/example_inventory_data.json")
+    with open(filename, "r", encoding="utf8") as f:
+        InventoryData = json.load(f)
 
     # checks if the request was a success
     try:
@@ -45,7 +49,11 @@ async def main():
 
     Thread(target=set_up_swapgg, daemon=True, args=(SwapGGClient,)).start()
 
-    Dbcon.delete_missing_items(inventory_packet_assets)
+    asset_id_list_to_delete, placeholders = Dbcon.get_asset_id_list_to_delete(
+        inventory_packet_assets
+    )
+    Dbcon.delete_items("items", asset_id_list_to_delete, placeholders)
+    Dbcon.delete_items("applied_stickers", asset_id_list_to_delete, placeholders)
 
     # unfortunetly the order of items in assets and descriptions don't always correspond with eachother
     correct_item_types = [
@@ -101,11 +109,11 @@ async def main():
                         # function that gets swapgg response again
                         # set the object here again
 
-                    CSWeapon.set_applied_stickers(swapgg_response)
+                    await CSWeapon.set_applied_stickers(swapgg_response)
                     # adds the item to the database
-                    await Dbcon.add_new_item(CSWeapon)
+                    Dbcon.add_new_item(CSWeapon)
                     # adds the stickers of the item to the database
-                    await Dbcon.add_applied_stickers(CSWeapon)
+                    Dbcon.add_applied_stickers(CSWeapon)
 
 
 # add an asynchronic for loop

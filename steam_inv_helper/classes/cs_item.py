@@ -37,7 +37,7 @@ class CSItem:
     def set_item_float(self, swapgg_response):
         self.item_float = str(swapgg_response["result"]["itemInfo"]["floatvalue"])[:9]
 
-    def set_applied_stickers(self, swapgg_response):
+    async def set_applied_stickers(self, swapgg_response):
         self.stickers = [None, None, None, None, None]
         sticker_list = swapgg_response["result"]["itemInfo"]["stickers"]
         for element in sticker_list:
