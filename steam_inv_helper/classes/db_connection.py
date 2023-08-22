@@ -18,7 +18,7 @@ class DbConnection:
         row_count = self.my_cursor.rowcount  ######
         return row_count == 1
 
-    def add_new_item(self, CsItem):
+    async def add_new_item(self, CsItem):
         properties = (
             CsItem.asset_id,
             CsItem.name,
@@ -34,9 +34,7 @@ class DbConnection:
         )
         self.con.commit()
 
-    def add_applied_stickers(self, CsItem):
-        # we need a function that will fill the table with null values if there are no stickers
-        # positions of the stickers matter so we will have to take the variables from the swapp gg interface
+    async def add_applied_stickers(self, CsItem):
         properties = (
             CsItem.asset_id,
             CsItem.stickers[0],

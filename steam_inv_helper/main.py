@@ -1,17 +1,23 @@
 import requests
+import json
 import os
+import asyncio
 from dotenv import load_dotenv
 from threading import Thread
-from classes.cs_item import CsItem
+from classes.cs_item import CSItem
 from classes.db_connection import DbConnection
 from classes.swapgg_interface import SwapGGInterface
 from classes.steam_interface import SteamInterface
 
 
-def main():
+async def main():
     load_dotenv()
     Dbcon = DbConnection()
+    # next time make a string that has all the data from the inv and make it a backup to test the program once you get
+    # rate limited so you don't waste multiple hours waiting until you get access to the service
     InventoryData = SteamInterface.get_inv_info(os.getenv("STEAM_USERID64"))
+
+    InventoryData = open()
 
     # checks if the request was a success
     try:
@@ -66,32 +72,44 @@ def main():
                     if Dbcon.check_for_existing_records(asset["assetid"]):
                         continue
 
-                    CsWeapon = CsItem(
+                    CSWeapon = CSItem(
                         asset["assetid"],
                         description["name"],
                         str(description["descriptions"][0]["value"][10:]),
                         os.getenv("STEAM_USERID64"),
                     )
+
                     # sets a special shortened variant of items exterior to make advertising easier
-                    CsWeapon.set_shorter_exterior()
+                    await CSWeapon.set_shorter_exterior()
                     # sets a special link which is needed to inspect the item as a property
-                    CsWeapon.set_inspect_link(description)
+                    await CSWeapon.set_inspect_link(description)
                     # checks if item is tradeable and adds a property based on that info
-                    CsWeapon.set_tradebility_status(description)
-                    # detects every applied sticker and adds it to a list as a property
+                    await CSWeapon.set_tradebility_status(description)
 
-                    swapgg_response = SwapGGClient.fetch_screenshot_info(CsWeapon)
-                    if swapgg_response == False:
-                        continue
+                    # create an asynchronus for loop
+                    # there already needs to be an event listener in this part of the code
 
-                    CsWeapon = SwapGGClient.get_screenshot(CsWeapon, swapgg_response)
+                    swapgg_response = SwapGGClient.fetch_screenshot_info(CSWeapon)
+                    if SwapGGClient.get_screenshot_status(swapgg_response):
+                        CSWeapon.set_item_float(swapgg_response)
+                        CSWeapon.set_screenshot_link(swapgg_response)
+                    else:
+                        print("To robimy jak screenshot jeszcze nie jest gotowy")
+                        SwapGGClient.wait_for_screenshot()
+                        swapgg_response = SwapGGClient.fetch_screenshot_info(CSWeapon)
+                        # function that waits untill the screenshot is completed
+                        # function that gets swapgg response again
+                        # set the object here again
 
-                    CsWeapon.set_applied_stickers(swapgg_response)
-                    # generates a screenshot and float data of the item
+                    CSWeapon.set_applied_stickers(swapgg_response)
+                    # adds the item to the database
+                    await Dbcon.add_new_item(CSWeapon)
+                    # adds the stickers of the item to the database
+                    await Dbcon.add_applied_stickers(CSWeapon)
 
-                    Dbcon.add_new_item(CsWeapon)
-                    Dbcon.add_applied_stickers(CsWeapon)
 
+# add an asynchronic for loop
+# make getting the screenshot asynchronic
 
 if __name__ == "__main__":
-    main()
+    asyncio.run(main())

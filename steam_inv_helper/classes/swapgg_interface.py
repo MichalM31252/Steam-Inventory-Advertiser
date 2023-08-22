@@ -21,39 +21,36 @@ class SwapGGInterface:
             if str(data["inspectLink"]) == self.current_item.inspect_link:
                 self.screenshot_ready = True
 
-    def wait_for_screenshot(self, CsWeapon, swapgg_response):
+    def wait_for_screenshot(self):
         # this is the only solution that doesn't eat up 90% of the processing power
         while not self.screenshot_ready:
             time.sleep(1)
         # reset the flag for the next screenshot
         self.screenshot_ready = False
-        return self.get_screenshot(CsWeapon, swapgg_response)
 
     def connect(self):
         self.socket.connect(self.url)
 
-    def fetch_screenshot_info(self, CsWeapon):
-        self.current_item = CsWeapon
+    def fetch_screenshot_info(self, CSWeapon):
+        self.current_item = CSWeapon
         url = "https://market-api.swap.gg/v1/screenshot"
         data = {
-            "inspectLink": CsWeapon.inspect_link.replace("%20", " "),
+            "inspectLink": CSWeapon.inspect_link.replace("%20", " "),
         }
         headers = {
             "Content-type": "application/json",
             "Authorization": self.authorization_token,
         }
-        res = requests.post(url=url, json=data, headers=headers)
-        return res if res.status_code == 200 else False
+        swapgg_response = requests.post(url=url, json=data, headers=headers).json()
+        return swapgg_response if swapgg_response["status"] == "OK" else False
 
-    def get_screenshot(self, CsWeapon, swapgg_response):
-        screenshot_status = swapgg_response.json()["result"]["state"]
+    def get_screenshot_status(self, swapgg_response):
+        screenshot_status = swapgg_response["result"]["state"]
         if screenshot_status == "COMPLETED":
-            CsWeapon.screenshot_link, CsWeapon.item_float = (
-                swapgg_response.json()["result"]["imageLink"],
-                str(swapgg_response.json()["result"]["itemInfo"]["floatvalue"])[:9],
-            )
+            return True
         elif screenshot_status == "IN_QUEUE":
-            # wait untill a correct inspect_link is returned
-            CsWeapon = self.wait_for_screenshot(self.current_item, swapgg_response)
-        self.current_item = None
-        return CsWeapon
+            return False
+        else:
+            raise TypeError(
+                "The screenshot data was unusable because the status was equal to: {screenshot_status}"
+            )
