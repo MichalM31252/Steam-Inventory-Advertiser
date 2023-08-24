@@ -1,6 +1,7 @@
 import socketio
 import time
 import requests
+from typing import Union
 
 
 class SwapGGInterface:
@@ -13,7 +14,7 @@ class SwapGGInterface:
 
         self.socket.on("screenshot:ready", self.on_screenshot_ready)
 
-    def on_screenshot_ready(self, data):
+    def on_screenshot_ready(self, data) -> None:
         if hasattr(self.current_item, "inspect_link"):
             self.current_item.inspect_link = self.current_item.inspect_link.replace(
                 "%20", " "
@@ -21,17 +22,17 @@ class SwapGGInterface:
             if str(data["inspectLink"]) == self.current_item.inspect_link:
                 self.screenshot_ready = True
 
-    def wait_for_screenshot(self):
+    def wait_for_screenshot(self) -> None:
         # this is the only solution that doesn't eat up 90% of the processing power
         while not self.screenshot_ready:
             time.sleep(1)
         # reset the flag for the next screenshot
         self.screenshot_ready = False
 
-    def connect(self):
+    def connect(self) -> None:
         self.socket.connect(self.url)
 
-    def fetch_screenshot_info(self, CSWeapon):
+    def fetch_screenshot_info(self, CSWeapon) -> Union(dict, bool):
         self.current_item = CSWeapon
         url = "https://market-api.swap.gg/v1/screenshot"
         data = {
@@ -44,7 +45,7 @@ class SwapGGInterface:
         swapgg_response = requests.post(url=url, json=data, headers=headers).json()
         return swapgg_response if swapgg_response["status"] == "OK" else False
 
-    def get_screenshot_status(self, swapgg_response):
+    def get_screenshot_status(self, swapgg_response) -> bool:
         screenshot_status = swapgg_response["result"]["state"]
         if screenshot_status == "COMPLETED":
             return True

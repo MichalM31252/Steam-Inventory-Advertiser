@@ -5,7 +5,7 @@ class CSItem:
         self.exterior = exterior
         self.steam_user_id64 = steam_user_id64
 
-    async def set_shorter_exterior(self):
+    async def set_shorter_exterior(self) -> None:
         to_shorten = {
             "Factory New": "FN",
             "Minimal Wear": "MW",
@@ -20,7 +20,7 @@ class CSItem:
                 self.exterior = self.exterior.replace(key, value)
                 return
 
-    async def set_inspect_link(self, description):
+    async def set_inspect_link(self, description) -> None:
         self.inspect_link = (
             description["actions"][0]["link"]
             .replace("%owner_steamid%", self.steam_user_id64)
@@ -28,16 +28,16 @@ class CSItem:
             .replace("%assetid%", self.asset_id)
         )
 
-    async def set_tradebility_status(self, description):
+    async def set_tradebility_status(self, description) -> None:
         self.tradeable = 0 if description["tradable"] == 0 else 1
 
-    def set_screenshot_link(self, swapgg_response):
+    def set_screenshot_link(self, swapgg_response) -> None:
         self.screenshot_link = swapgg_response["result"]["imageLink"]
 
-    def set_item_float(self, swapgg_response):
+    def set_item_float(self, swapgg_response) -> None:
         self.item_float = str(swapgg_response["result"]["itemInfo"]["floatvalue"])[:9]
 
-    async def set_applied_stickers(self, swapgg_response):
+    async def set_applied_stickers(self, swapgg_response) -> None:
         self.stickers = [None, None, None, None, None]
         sticker_list = swapgg_response["result"]["itemInfo"]["stickers"]
         for element in sticker_list:
