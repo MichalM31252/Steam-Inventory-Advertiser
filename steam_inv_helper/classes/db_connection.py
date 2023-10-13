@@ -49,7 +49,7 @@ class DbConnection:
         )
         self.con.commit()
 
-    def get_asset_id_list_to_delete(self, inventory_packet_assets) -> tuple(list, str):
+    def get_asset_id_list_to_delete(self, inventory_packet_assets) -> tuple[list, str]:
         asset_id_list_to_delete = [
             element["assetid"] for element in inventory_packet_assets
         ]

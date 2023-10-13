@@ -32,7 +32,7 @@ class SwapGGInterface:
     def connect(self) -> None:
         self.socket.connect(self.url)
 
-    def fetch_screenshot_info(self, CSWeapon) -> Union(dict, bool):
+    def fetch_screenshot_info(self, CSWeapon):
         self.current_item = CSWeapon
         url = "https://market-api.swap.gg/v1/screenshot"
         data = {

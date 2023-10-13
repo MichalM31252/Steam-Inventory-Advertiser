@@ -1,5 +1,4 @@
-import requests
-import json
+import config
 import os
 import asyncio
 from dotenv import load_dotenv
@@ -11,17 +10,16 @@ from classes.steam_interface import SteamInterface
 
 
 async def main():
-    load_dotenv()
     Dbcon = DbConnection()
     # next time make a string that has all the data from the inv and make it a backup to test the program once you get
     # rate limited so you don't waste multiple hours waiting until you get access to the service
-    # InventoryData = SteamInterface.get_inv_info(os.getenv("STEAM_USERID64"))
-    # print(json.dumps(InventoryData))
+    InventoryData = SteamInterface.get_inv_info(config.STEAM_USERID64)
 
-    dirname = os.path.dirname(__file__)
-    filename = os.path.join(dirname, "example_data/example_inventory_data.json")
-    with open(filename, "r", encoding="utf8") as f:
-        InventoryData = json.load(f)
+    # dirname = os.path.dirname(__file__)
+    # # 1-3 different files for example_data
+    # filename = os.path.join(dirname, "example_data/example_inventory_data_1.json")
+    # with open(filename, "r", encoding="utf8") as f:
+    #     InventoryData = json.load(f)
 
     # checks if the request was a success
     try:
@@ -40,6 +38,7 @@ async def main():
     inventory_packet_descriptions = InventoryData["descriptions"]
 
     # create an object which is responsible for communicating with the swappgg api service
+    load_dotenv()
     SwapGGClient = SwapGGInterface(
         "https://market-ws.swap.gg/", os.getenv("SWAPGG_API_KEY")
     )
@@ -52,21 +51,13 @@ async def main():
     asset_id_list_to_delete, placeholders = Dbcon.get_asset_id_list_to_delete(
         inventory_packet_assets
     )
+
     Dbcon.delete_items("items", asset_id_list_to_delete, placeholders)
     Dbcon.delete_items("applied_stickers", asset_id_list_to_delete, placeholders)
 
     # unfortunetly the order of items in assets and descriptions don't always correspond with eachother
-    correct_item_types = [
-        "Rifle",
-        "Pistol",
-        "SMG",
-        "Sniper Rifle",
-        "Gloves",
-        "Knife",
-        "Shotgun",
-        "Machinegun",
-    ]
-
+    # place this where constants are stored
+    correct_item_types = config.CORRECT_ITEM_TYPES
     for asset in inventory_packet_assets:
         for description in inventory_packet_descriptions:
             if (
@@ -102,7 +93,6 @@ async def main():
                         CSWeapon.set_item_float(swapgg_response)
                         CSWeapon.set_screenshot_link(swapgg_response)
                     else:
-                        print("To robimy jak screenshot jeszcze nie jest gotowy")
                         SwapGGClient.wait_for_screenshot()
                         swapgg_response = SwapGGClient.fetch_screenshot_info(CSWeapon)
                         # function that waits untill the screenshot is completed
