@@ -75,7 +75,7 @@ async def main():
                         asset["assetid"],
                         description["name"],
                         str(description["descriptions"][0]["value"][10:]),
-                        os.getenv("STEAM_USERID64"),
+                        config.STEAM_USERID64,
                     )
 
                     # sets a special shortened variant of items exterior to make advertising easier

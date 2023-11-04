@@ -34,7 +34,7 @@ class SwapGGInterface:
 
     def fetch_screenshot_info(self, CSWeapon):
         self.current_item = CSWeapon
-        url = "https://market-api.swap.gg/v1/screenshot"
+        url = "https://api.swap.gg/v2/screenshot"
         data = {
             "inspectLink": CSWeapon.inspect_link.replace("%20", " "),
         }
